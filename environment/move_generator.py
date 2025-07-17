@@ -15,10 +15,10 @@ class MoveGenerator(object):
         self.wild_cards_in_hand = []
 
         self.cards_list = cards_list
-        self.cards_dict = collections.defaultdict(int)
+        self.cards_dict = collections.defaultdict(list)
 
         for i in self.cards_list:
-            self.cards_dict[EnvCard2Rank[i]] += 1
+            self.cards_dict[EnvCard2Rank[i]].append(i)
 
         self.single_card_moves = []
         self.gen_type_1_single()
@@ -54,49 +54,55 @@ class MoveGenerator(object):
     def gen_type_2_pair(self):
         self.pair_moves = []
         for k, v in self.cards_dict.items():
-            if v >= 2:
-                self.pair_moves.append([k, k])
+            if len(v) >= 2:
+                self.pair_moves += list(map(list, itertools.combinations(v, 2)))
+            if self.wild_card_of_game in self.cards_list:
+                for k1, v1 in self.cards_dict.items():
+                    if k1 != EnvCard2Rank[self.wild_card_of_game]:
+                        for i1 in range(len(list(set(v1)))):
+                            self.pair_moves.append([list(set(v1))[i1], self.wild_card_of_game])
+        self.pair_moves = [list(t) for t in set(tuple(p) for p in self.pair_moves)]
         return self.pair_moves
 
     def gen_type_3_triple(self):
         self.triple_cards_moves = []
         for k, v in self.cards_dict.items():
-            if v >= 3:
+            if len(v) >= 3:
                 self.triple_cards_moves.append([k, k, k])
         return self.triple_cards_moves
 
     def gen_type_8_bomb_4(self):
         self.bomb_4_moves = []
         for k, v in self.cards_dict.items():
-            if v >= 4:
+            if len(v) >= 4:
                 self.bomb_4_moves.append([k, k, k, k])
         return self.bomb_4_moves
 
     def gen_type_9_bomb_5(self):
         self.bomb_5_moves = []
         for k, v in self.cards_dict.items():
-            if v >= 5:
+            if len(v) >= 5:
                 self.bomb_5_moves.append([k, k, k, k, k])
         return self.bomb_5_moves
 
     def gen_type_11_bomb_6(self):
         self.bomb_6_moves = []
         for k, v in self.cards_dict.items():
-            if v >= 6:
+            if len(v) >= 6:
                 self.bomb_6_moves.append([k, k, k, k, k, k])
         return self.bomb_6_moves
 
     def gen_type_12_bomb_7(self):
         self.bomb_7_moves = []
         for k, v in self.cards_dict.items():
-            if v >= 7:
+            if len(v) >= 7:
                 self.bomb_7_moves.append([k, k, k, k, k, k, k])
         return self.bomb_7_moves
 
     def gen_type_13_bomb_8(self):
         self.bomb_8_moves = []
         for k, v in self.cards_dict.items():
-            if v == 8:
+            if len(v) >= 8:
                 self.bomb_8_moves.append([k, k, k, k, k, k, k, k])
         return self.bomb_8_moves
 
@@ -110,7 +116,9 @@ class MoveGenerator(object):
     #     print(self.card_dict)
 
 
-test_hand = MoveGenerator([0, 1, 2, 3, 3, 6, 9, 10, 33, 53, 53, 45, 52, 52], wild_card_of_game=3)
+test_hand = MoveGenerator([2, 2, 3, 3, 4, 5, 6, 6], wild_card_of_game=3)
 # test_hand.test()
 print(len(test_hand.find_wild_card_in_hand()))
 print(test_hand.joker_bomb_moves)
+print(test_hand.cards_dict)
+print(test_hand.pair_moves)
