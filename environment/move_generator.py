@@ -59,51 +59,60 @@ class MoveGenerator(object):
             if self.wild_card_of_game in self.cards_list:
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game]:
-                        for i1 in range(len(list(set(v1)))):
-                            self.pair_moves.append([list(set(v1))[i1], self.wild_card_of_game])
+                        list_of_same_rank = list(set(v1))
+                        for i1 in range(len(list_of_same_rank)):
+                            self.pair_moves.append([list_of_same_rank[i1], self.wild_card_of_game])
         self.pair_moves = [list(t) for t in set(tuple(p) for p in self.pair_moves)]
         return self.pair_moves
 
-    def gen_type_3_triple(self):
-        self.triple_cards_moves = []
+    def _cards_with_same_rank_with_wild_card(self, number_of_cards: int):
+        """
+        dealing with card type with same rank. more than 3 cards. consider wild card
+        :param number_of_cards
+        :return: all combinations of cards
+        """
+        moves = []
         for k, v in self.cards_dict.items():
-            if len(v) >= 3:
-                self.triple_cards_moves.append([k, k, k])
+            if len(v) >= number_of_cards:  # combinations without wildcard
+                moves += list(map(list, itertools.combinations(v, number_of_cards)))
+            if self.wild_card_of_game in self.cards_list:  # with one wildcard
+                for k1, v1 in self.cards_dict.items():
+                    if k1 != EnvCard2Rank[self.wild_card_of_game]:
+                        list_of_combination = list(map(list, itertools.combinations(v1, number_of_cards - 1)))
+                        for i1 in range(len(list_of_combination)):
+                            moves.append(list_of_combination[i1] + [self.wild_card_of_game])
+            if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
+                for k1, v1 in self.cards_dict.items():
+                    if k1 != EnvCard2Rank[self.wild_card_of_game]:
+                        list_of_combination = list(map(list, itertools.combinations(v1, number_of_cards - 2)))
+                        for i1 in range(len(list_of_combination)):
+                            moves.append(
+                                list_of_combination[i1] + [self.wild_card_of_game] + [self.wild_card_of_game])
+            moves = [list(t) for t in set(tuple(p) for p in moves)]  # make all moves unique
+        return moves
+
+    def gen_type_3_triple(self):
+        self.triple_cards_moves = self._cards_with_same_rank_with_wild_card(number_of_cards=3)
         return self.triple_cards_moves
 
     def gen_type_8_bomb_4(self):
-        self.bomb_4_moves = []
-        for k, v in self.cards_dict.items():
-            if len(v) >= 4:
-                self.bomb_4_moves.append([k, k, k, k])
+        self.bomb_4_moves = self._cards_with_same_rank_with_wild_card(number_of_cards=4)
         return self.bomb_4_moves
 
     def gen_type_9_bomb_5(self):
-        self.bomb_5_moves = []
-        for k, v in self.cards_dict.items():
-            if len(v) >= 5:
-                self.bomb_5_moves.append([k, k, k, k, k])
+        self.bomb_5_moves = self._cards_with_same_rank_with_wild_card(number_of_cards=5)
         return self.bomb_5_moves
 
     def gen_type_11_bomb_6(self):
-        self.bomb_6_moves = []
-        for k, v in self.cards_dict.items():
-            if len(v) >= 6:
-                self.bomb_6_moves.append([k, k, k, k, k, k])
+        self.bomb_6_moves = self._cards_with_same_rank_with_wild_card(number_of_cards=6)
         return self.bomb_6_moves
 
     def gen_type_12_bomb_7(self):
-        self.bomb_7_moves = []
-        for k, v in self.cards_dict.items():
-            if len(v) >= 7:
-                self.bomb_7_moves.append([k, k, k, k, k, k, k])
+        self.bomb_7_moves = self._cards_with_same_rank_with_wild_card(number_of_cards=7)
         return self.bomb_7_moves
 
     def gen_type_13_bomb_8(self):
-        self.bomb_8_moves = []
-        for k, v in self.cards_dict.items():
-            if len(v) >= 8:
-                self.bomb_8_moves.append([k, k, k, k, k, k, k, k])
+        self.bomb_8_moves = self._cards_with_same_rank_with_wild_card(number_of_cards=8)
         return self.bomb_8_moves
 
     def gen_type_14_joker_bomb(self):
@@ -116,9 +125,11 @@ class MoveGenerator(object):
     #     print(self.card_dict)
 
 
-test_hand = MoveGenerator([2, 2, 3, 3, 4, 5, 6, 6], wild_card_of_game=3)
+test_hand = MoveGenerator([2, 3, 3, 4, 6, 6], wild_card_of_game=3)
 # test_hand.test()
 print(len(test_hand.find_wild_card_in_hand()))
 print(test_hand.joker_bomb_moves)
 print(test_hand.cards_dict)
 print(test_hand.pair_moves)
+print(test_hand.triple_cards_moves)
+print(test_hand.wild_card_of_game)
