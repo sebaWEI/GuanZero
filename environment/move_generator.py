@@ -45,6 +45,8 @@ class MoveGenerator(object):
         self.gen_type_14_joker_bomb()
         self.straight_moves = []
         self.gen_type_5_straight()
+        self.straight_flush_move = []
+        self.gen_type_10_straight_flush()
 
     def find_wild_card_in_hand(self):
         self.wild_cards_in_hand = []
@@ -216,8 +218,23 @@ class MoveGenerator(object):
         self.straight_moves = [list(straight_move) for straight_move in self.straight_moves]
         return self.straight_moves
 
+    def gen_type_10_straight_flush(self):
+        self.straight_flush_move = []
+        for straight in self.straight_moves:
+            non_wildcard_cards = []
+            suit_list = []
+            for card in straight:
+                if card != self.wild_card_of_game:
+                    non_wildcard_cards.append(card)
+            for card in non_wildcard_cards:
+                suit_list.append(EnvCard2Suit[card])
+            is_straight_flush = len(set(suit_list)) == 1
+            if is_straight_flush:
+                self.straight_flush_move.append(straight)
+        return self.straight_flush_move
 
-test_hand = MoveGenerator([3, 3, 24, 28, 32, 48, 4, 8, 12], wild_card_of_game=3)
+
+test_hand = MoveGenerator([3, 3, 24, 28, 32, 48, 4, 8, 12, 5, 9, 13], wild_card_of_game=3)
 # test_hand.test()
 
 print(test_hand.joker_bomb_moves)
@@ -227,3 +244,4 @@ print(test_hand.triple_cards_moves)
 print(test_hand.wild_card_of_game)
 print(test_hand.straight_continuity_check())
 print(test_hand.straight_moves)
+print(test_hand.gen_type_10_straight_flush())
