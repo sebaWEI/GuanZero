@@ -76,7 +76,7 @@ class MoveGenerator(object):
                 self.pair_moves += list_combinations(v, 2)
             if self.wild_card_of_game in self.cards_list:
                 for k1, v1 in self.cards_dict.items():
-                    if k1 != EnvCard2Rank[self.wild_card_of_game]:
+                    if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
                         list_of_same_rank = list(set(v1))
                         for i1 in range(len(list_of_same_rank)):
                             self.pair_moves.append([list_of_same_rank[i1], self.wild_card_of_game])
@@ -106,13 +106,13 @@ class MoveGenerator(object):
                 moves += list_combinations(v, number_of_cards)
             if self.wild_card_of_game in self.cards_list:  # with one wildcard
                 for k1, v1 in self.cards_dict.items():
-                    if k1 != EnvCard2Rank[self.wild_card_of_game]:
+                    if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
                         list_of_combination = list_combinations(v1, number_of_cards - 1)
                         for i1 in range(len(list_of_combination)):
                             moves.append(list_of_combination[i1] + [self.wild_card_of_game])
             if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
                 for k1, v1 in self.cards_dict.items():
-                    if k1 != EnvCard2Rank[self.wild_card_of_game]:
+                    if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
                         list_of_combination = list_combinations(v1, number_of_cards - 2)
                         for i1 in range(len(list_of_combination)):
                             moves.append(
