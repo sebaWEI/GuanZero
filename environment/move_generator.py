@@ -1,7 +1,7 @@
 import collections
 import itertools
-from environment.utils import select
-from environment.utils import RealCard2EnvCard, EnvCard2RealCard, EnvCard2Rank, EnvCard2Suit
+from environment.utils import list_combinations, make_it_unique
+from environment.utils import EnvCard2Rank, EnvCard2Suit
 
 
 class MoveGenerator(object):
@@ -45,8 +45,14 @@ class MoveGenerator(object):
         self.gen_type_14_joker_bomb()
         self.straight_moves = []
         self.gen_type_5_straight()
-        self.straight_flush_move = []
+        self.straight_flush_moves = []
         self.gen_type_10_straight_flush()
+        self._3_2_moves = []
+        self.gen_type_4_3_2()
+        self.serial_pair_moves = []
+        self.gen_type_6_serial_pair()
+        self.serial_triple_moves = []
+        self.gen_type_7_serial_triple()
 
     def find_wild_card_in_hand(self):
         self.wild_cards_in_hand = []
@@ -67,7 +73,7 @@ class MoveGenerator(object):
         self.pair_moves = []
         for k, v in self.cards_dict.items():
             if len(v) >= 2:
-                self.pair_moves += select(v, 2)
+                self.pair_moves += list_combinations(v, 2)
             if self.wild_card_of_game in self.cards_list:
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game]:
@@ -97,17 +103,17 @@ class MoveGenerator(object):
         moves = []
         for k, v in self.cards_dict.items():
             if len(v) >= number_of_cards:  # combinations without wildcard
-                moves += select(v, number_of_cards)
+                moves += list_combinations(v, number_of_cards)
             if self.wild_card_of_game in self.cards_list:  # with one wildcard
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game]:
-                        list_of_combination = select(v1, number_of_cards - 1)
+                        list_of_combination = list_combinations(v1, number_of_cards - 1)
                         for i1 in range(len(list_of_combination)):
                             moves.append(list_of_combination[i1] + [self.wild_card_of_game])
             if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game]:
-                        list_of_combination = select(v1, number_of_cards - 2)
+                        list_of_combination = list_combinations(v1, number_of_cards - 2)
                         for i1 in range(len(list_of_combination)):
                             moves.append(
                                 list_of_combination[i1] + [self.wild_card_of_game] + [self.wild_card_of_game])
@@ -219,7 +225,7 @@ class MoveGenerator(object):
         return self.straight_moves
 
     def gen_type_10_straight_flush(self):
-        self.straight_flush_move = []
+        self.straight_flush_moves = []
         for straight in self.straight_moves:
             non_wildcard_cards = []
             suit_list = []
@@ -230,18 +236,74 @@ class MoveGenerator(object):
                 suit_list.append(EnvCard2Suit[card])
             is_straight_flush = len(set(suit_list)) == 1
             if is_straight_flush:
-                self.straight_flush_move.append(straight)
-        return self.straight_flush_move
+                self.straight_flush_moves.append(straight)
+        return self.straight_flush_moves
 
+    def gen_type_4_3_2(self):
+        self._3_2_moves = []
+        combinations = [list(combination) for combination in
+                        list(itertools.product(self.triple_cards_moves, self.pair_moves))]
+        # the card on the position 0 determines the rank of the triple
+        legal_combinations = [combination for combination in combinations if
+                              EnvCard2Rank[combination[0][0]] != EnvCard2Rank[combination[1][0]]]
+        legal_combinations = [sorted(combination[0] + combination[1]) for combination in legal_combinations]
+        legal_combinations = [combination for combination in legal_combinations if
+                              combination.count(self.wild_card_of_game) <= self.number_of_wild_cards]
+        self._3_2_moves = [list(combination) for combination in
+                           list(set([tuple(combination) for combination in legal_combinations]))]
+        return self._3_2_moves
 
-test_hand = MoveGenerator([3, 3, 24, 28, 32, 48, 4, 8, 12, 5, 9, 13], wild_card_of_game=3)
-# test_hand.test()
+    def gen_type_6_serial_pair(self):
+        self.serial_pair_moves = self._gen_series(self.pair_moves, sequence_length=3)
+        return self.serial_pair_moves
 
-print(test_hand.joker_bomb_moves)
-print(test_hand.cards_dict)
-print(test_hand.pair_moves)
-print(test_hand.triple_cards_moves)
-print(test_hand.wild_card_of_game)
-print(test_hand.straight_continuity_check())
-print(test_hand.straight_moves)
-print(test_hand.gen_type_10_straight_flush())
+    def gen_type_7_serial_triple(self):
+        self.serial_triple_moves = self._gen_series(self.triple_cards_moves, sequence_length=2)
+        return self.serial_triple_moves
+
+    def _gen_series(self, components: list, sequence_length: int = 2):
+        """
+        generate series based on existing moves such as triples or pairs
+        sequence_length means the length of rank in the series, 2 for '333444' and 3 for '334455'
+        """
+        moves = []
+        sorted_components = sorted(components, key=lambda x: (EnvCard2Rank[x[0]], x[0]))
+        components_dict = collections.defaultdict(list)
+        for i in sorted_components:
+            if 14 >= EnvCard2Rank[i[0]] >= 2:
+                components_dict[EnvCard2Rank[i[0]]].append(i)
+        components_dict[1] = components_dict[14]
+        existing_series_start = []
+        for i in range(1, 16 - sequence_length):
+            if all(k in components_dict.keys() for k in [i + k for k in range(0, sequence_length)]):
+                existing_series_start.append(i)
+        for i in existing_series_start:
+            ranks = [i + offset for offset in range(0, sequence_length)]
+            cards = [components_dict[k] for k in ranks]
+            combinations = list(itertools.product(*cards))
+
+            combinations = [sorted([item for group in combination for item in group]) for combination in combinations]
+            legal_combinations = [combination for combination in combinations if
+                                  combination.count(self.wild_card_of_game) <= self.number_of_wild_cards]
+            moves += legal_combinations
+
+        moves = make_it_unique(moves)
+        return moves
+
+    def gen_moves(self):
+        moves = []
+        moves.extend(self.gen_type_1_single())
+        moves.extend(self.gen_type_2_pair())
+        moves.extend(self.gen_type_3_triple())
+        moves.extend(self.gen_type_4_3_2())
+        moves.extend(self.gen_type_5_straight())
+        moves.extend(self.gen_type_6_serial_pair())
+        moves.extend(self.gen_type_7_serial_triple())
+        moves.extend(self.gen_type_8_bomb_4())
+        moves.extend(self.gen_type_9_bomb_5())
+        moves.extend(self.gen_type_10_straight_flush())
+        moves.extend(self.gen_type_11_bomb_6())
+        moves.extend(self.gen_type_12_bomb_7())
+        moves.extend(self.gen_type_13_bomb_8())
+        moves.extend(self.gen_type_14_joker_bomb())
+        return moves

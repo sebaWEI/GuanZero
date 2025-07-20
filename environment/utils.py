@@ -9,8 +9,8 @@ TYPE_2_PAIR = 2
 TYPE_3_TRIPLE = 3
 TYPE_4_3_2 = 4
 TYPE_5_STRAIGHT = 5
-TYPE_6_SERIAL_PAIR = 6
-TYPE_7_SERIAL_TRIPLE = 7
+TYPE_6_SERIAL_PAIR = 6  # 556677
+TYPE_7_SERIAL_TRIPLE = 7  # 555666
 TYPE_8_BOMB_4 = 8
 TYPE_9_BOMB_5 = 9
 TYPE_10_STRAIGHT_FLUSH = 10
@@ -21,8 +21,15 @@ TYPE_14_JOKER_BOMB = 14
 
 
 # return all possible results of selecting num cards from cards list
-def select(cards, num):
-    return [list(i) for i in itertools.combinations(cards, num)]
+def list_combinations(cards, num):
+    combinations = [list(i) for i in list(set(itertools.combinations(cards, num)))]
+    return combinations
+
+
+def make_it_unique(repetitive_list):
+    unique_list = list(set([tuple(sorted(i)) for i in repetitive_list]))
+    unique_and_ordered_list = [list(i) for i in unique_list]
+    return unique_and_ordered_list
 
 
 RealCard2EnvCard = {'2S': 0, '2H': 1, '2C': 2, '2D': 3,
@@ -68,7 +75,7 @@ EnvCard2Rank = {0: 2, 1: 2, 2: 2, 3: 2,
                 40: 12, 41: 12, 42: 12, 43: 12,
                 44: 13, 45: 13, 46: 13, 47: 13,
                 48: 14, 49: 14, 50: 14, 51: 14,
-                52: 'X', 53: 'D'}
+                52: 15, 53: 16}
 
 EnvCard2Suit = {0: 'S', 1: 'H', 2: 'C', 3: 'D',
                 4: 'S', 5: 'H', 6: 'C', 7: 'D',
@@ -84,7 +91,3 @@ EnvCard2Suit = {0: 'S', 1: 'H', 2: 'C', 3: 'D',
                 44: 'S', 45: 'H', 46: 'C', 47: 'D',
                 48: 'S', 49: 'H', 50: 'C', 51: 'D',
                 52: 'X', 53: 'D'}
-
-
-
-
