@@ -18,6 +18,7 @@ TYPE_11_BOMB_6 = 11
 TYPE_12_BOMB_7 = 12
 TYPE_13_BOMB_8 = 13
 TYPE_14_JOKER_BOMB = 14
+TYPE_15_WRONG = 15
 
 
 # return all possible results of selecting num cards from cards list
