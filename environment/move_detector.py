@@ -1,8 +1,6 @@
 import collections
 from utils import *
 
-list_of_A = [48, 49, 50, 51]
-
 
 def get_move_type(move, wild_card_of_game=1):
     move_size = len(move)
