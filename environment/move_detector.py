@@ -54,26 +54,40 @@ def get_move_type(move, wild_card_of_game=1):
     if move_size == 5:
         if number_of_wild_cards <= 2 and len(move_dict_without_wildcard) == 1:
             return {'type': TYPE_9_BOMB_5, 'rank': EnvCard2Rank[move_without_wildcard[0]]}
+        if any(x in move for x in Rank2EnvCard[14]) and (len(move_dict_without_wildcard) == 5 - number_of_wild_cards):#check if there is a A
+            if len([card for card in move_without_wildcard if card in Rank2EnvCard[2] + Rank2EnvCard[3] \
+                    + Rank2EnvCard[4] + Rank2EnvCard[5]]) + number_of_wild_cards == 4:
+                suit_dict = collections.defaultdict(list)
+                for i in move_without_wildcard:
+                    suit_dict[EnvCard2Suit[i]].append(i)
+                if len(suit_dict) == 1:
+                    return {'type': TYPE_10_STRAIGHT_FLUSH, 'rank': 1}#12345
+                else:
+                    return {'type': TYPE_5_STRAIGHT, 'rank': 1}
+            if len([card for card in move_without_wildcard if card in Rank2EnvCard[10] + Rank2EnvCard[11] \
+                    + Rank2EnvCard[12] + Rank2EnvCard[13]]) + number_of_wild_cards == 4:
+                suit_dict = collections.defaultdict(list)
+                for i in move_without_wildcard:
+                    suit_dict[EnvCard2Suit[i]].append(i)
+                if len(suit_dict) == 1:
+                    return {'type': TYPE_10_STRAIGHT_FLUSH, 'rank': 10}
+                else:
+                    return {'type': TYPE_5_STRAIGHT, 'rank': 10}#10,11,12,13,14
+                
         if (len(move_dict_without_wildcard) == 5 - number_of_wild_cards) and (
                 2 <= EnvCard2Rank[move_without_wildcard[0]] < EnvCard2Rank[move_without_wildcard[-1]] <= 14) and (
                 EnvCard2Rank[move_without_wildcard[-1]] - EnvCard2Rank[move_without_wildcard[0]] <= 4):
             suit_dict = collections.defaultdict(list)
             for i in move_without_wildcard:
                 suit_dict[EnvCard2Suit[i]].append(i)
+            if [EnvCard2Rank[card] for card in move_without_wildcard]==[11,12,13]:#check if the move is a special case of xxJQK
+                if len(suit_dict) == 1:
+                    return {'type': TYPE_10_STRAIGHT_FLUSH, 'rank': 10}
+                return {'type': TYPE_5_STRAIGHT, 'rank': 10}#xxJQK
             if len(suit_dict) == 1:
                 return {'type': TYPE_10_STRAIGHT_FLUSH, 'rank': EnvCard2Rank[move_without_wildcard[0]]}
             return {'type': TYPE_5_STRAIGHT, 'rank': EnvCard2Rank[move_without_wildcard[0]]}
-        if (len(move_dict_without_wildcard) == 5 - number_of_wild_cards) and any(
-                x in move for x in Rank2EnvCard[14]) and (
-                len([card for card in move_without_wildcard if
-                     card in Rank2EnvCard[2] + Rank2EnvCard[3] + Rank2EnvCard[4] + Rank2EnvCard[
-                         5]]) + number_of_wild_cards == 4):
-            suit_dict = collections.defaultdict(list)
-            for i in move_without_wildcard:
-                suit_dict[EnvCard2Suit[i]].append(i)
-            if len(suit_dict) == 1:
-                return {'type': TYPE_10_STRAIGHT_FLUSH, 'rank': 1}
-            return {'type': TYPE_5_STRAIGHT, 'rank': 1}
+            
 
         if len(move_dict_without_wildcard) == 2 and sorted(rank2number.values()) == [2, 3]:
             rank = [k for k, v in rank2number.items() if v == 3][0]
