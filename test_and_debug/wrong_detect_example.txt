@@ -3,6 +3,7 @@
 Move to Detect: ['2H', '2H', 'JS', 'QS', 'KS']
 Detected Move Type: 10, Rank: 11)
 #Reason: the rank of this straight flush is 10,because 10,11,12,13,14
+!!!this bug has been repaired
 
 Move to Detect: ['2H', '9S', 'JS', 'QS', 'KS']
 Detected Move Type: 10, Rank: 9)
@@ -15,7 +16,9 @@ Detected Move Type: 10, Rank: 9)
 Move to Detect: ['X', 'X']
 Detected Move Type: 2, Rank: 15
 #reason:[52,52] is not a legal pair, it should be detected as TYPE_15_WRONG
+!!!this bug has been repaired
 
 Move to Detect: ['2H', '2H', '5S', '6S', '6H', '6C']
 Detected Move Type: TYPE_15_WRONG
 reason:should be detected as 555666
+!!!this bug has been repaired

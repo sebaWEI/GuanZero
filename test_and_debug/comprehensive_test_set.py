@@ -41,7 +41,10 @@ test_set=[[0],
           [20,20,21,21,22,22,23,23],
           [20,20,21,21,22,22,23,1],
           [20,20,21,21,22,22,1,1],
-          [52,53,52,53]]
+          [52,53,52,53],
+          [1,1,12,16,17,18],
+          [1,1,36,40,44],
+          [1,1,36,40,45]]
 #test_set could be extended with more test cases in order to include all possible move types
 test_set =make_it_unique(test_set)
 
