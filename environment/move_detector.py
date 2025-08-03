@@ -129,16 +129,41 @@ def get_move_type(move, wild_card_of_game=1):
         if sorted_rank_without_wild_card[-1] == 14:#check the special case of 6 cards,rank is special
             if  len(number2rank[2]) == 3 and sorted(rank2number.keys()) == [2, 3, 14]:
                 return {'type': TYPE_6_SERIAL_PAIR, 'rank': 1}
-            if number_of_wild_cards == 1 and len(number2rank[2]) == 2 and sorted(rank2number.keys()) == [2, 3, 14]:
-                return {'type': TYPE_6_SERIAL_PAIR, 'rank': 1}
-            if number_of_wild_cards == 2:
-                if len(rank2number.keys()) == 3 and sorted(rank2number.keys()) == [2, 3, 14]:
+            if len(number2rank[2] ) == 3 and sorted(rank2number.keys()) == [12, 13, 14]:
+                return {'type': TYPE_6_SERIAL_PAIR, 'rank': 12}
+            if len(number2rank[3]) == 2 and sorted(rank2number.keys()) == [2, 14]:
+                return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': 1}
+            if len(number2rank[3]) == 2 and sorted(rank2number.keys()) == [13, 14]:
+                return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': 13}
+            
+            if number_of_wild_cards == 1 :
+                if len(number2rank[2]) == 2 and sorted(rank2number.keys()) == [2, 3, 14]:
                     return {'type': TYPE_6_SERIAL_PAIR, 'rank': 1}
+                if len(number2rank[2]) == 2 and sorted(rank2number.keys()) == [12, 13, 14]:
+                    return {'type': TYPE_6_SERIAL_PAIR, 'rank': 12}
+                if len(number2rank[3]) == 1 and sorted(rank2number.keys()) == [2, 14]:
+                    return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': 1}
+                if len(number2rank[3]) == 1 and sorted(rank2number.keys()) == [13, 14]:
+                    return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': 13}
+                
+            if number_of_wild_cards == 2:
+                if sorted(rank2number.keys()) == [2, 3, 14]:
+                    return {'type': TYPE_6_SERIAL_PAIR, 'rank': 1}
+                if sorted(rank2number.keys()) == [12, 13, 14]:
+                    return {'type': TYPE_6_SERIAL_PAIR, 'rank': 12}
+                if sorted(rank2number.keys()) == [2, 14] and len(number2rank[2]) != 2:
+                    return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': 1}
+                if sorted(rank2number.keys()) == [13, 14] and len(number2rank[2]) != 2:
+                    return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': 13}
                 if len(rank2number.keys()) == 2 and len(number2rank[2]) == 2:
                     if sorted(rank2number.keys()) == [2, 14]:
-                        return {'type': [TYPE_7_SERIAL_TRIPLE,TYPE_6_SERIAL_PAIR], 'rank': 1},
+                        return {'type': [TYPE_7_SERIAL_TRIPLE,TYPE_6_SERIAL_PAIR], 'rank': 1}
+                    if sorted(rank2number.keys()) == [13, 14]:
+                        return {'type': [TYPE_7_SERIAL_TRIPLE,TYPE_6_SERIAL_PAIR], 'rank': [13,12]}
                     if sorted(rank2number.keys()) == [3, 14]:
                         return {'type': TYPE_6_SERIAL_PAIR, 'rank': 1}
+                    if sorted(rank2number.keys()) == [12, 14]:
+                        return {'type': TYPE_6_SERIAL_PAIR, 'rank': 12}
         
         if number_of_wild_cards == 0 :#check the normal case of 6 cards while wild card number is 0
             if 2 in number2rank and len(number2rank[2]) == 3 and sorted(number2rank.values())[0][0]+2 == sorted(number2rank.values())[0][1]+1 == sorted(number2rank.values())[0][2]\
