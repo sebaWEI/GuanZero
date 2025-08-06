@@ -1,5 +1,0 @@
-#this file is used to collect those examples that are not detected correctly by the move detector
-    
-Move to Detect: ['2H', '2H', 'JS', 'QS', 'KS']
-Detected Move Type: 10, Rank: 11)
-#Reason: the rank of this straight flush is 9,because 9,10,11,12,13
