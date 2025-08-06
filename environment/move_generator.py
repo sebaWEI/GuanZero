@@ -72,7 +72,7 @@ class MoveGenerator(object):
     def gen_type_2_pair(self):
         self.pair_moves = []
         for k, v in self.cards_dict.items():
-            if len(v) >= 2:
+            if len(v) >= 2 and k!=EnvCard2Rank[self.wild_card_of_game] and k != 15 and k != 16:#need to check if the card rank is not wild card and not joker
                 self.pair_moves += list_combinations(v, 2)
             if self.wild_card_of_game in self.cards_list:
                 for k1, v1 in self.cards_dict.items():
@@ -81,6 +81,7 @@ class MoveGenerator(object):
                         for i1 in range(len(list_of_same_rank)):
                             self.pair_moves.append([list_of_same_rank[i1], self.wild_card_of_game])
         self.pair_moves = [list(t) for t in set(tuple(p) for p in self.pair_moves)]
+        self.pair_moves = make_it_unique(self.pair_moves)  
         return self.pair_moves
 
     def _cards_with_same_rank_with_wild_card(self, number_of_cards: int):
@@ -108,16 +109,15 @@ class MoveGenerator(object):
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
                         list_of_combination = list_combinations(v1, number_of_cards - 1)
-                        for i1 in range(len(list_of_combination)):
-                            moves.append(list_of_combination[i1] + [self.wild_card_of_game])
+                        for item in list_of_combination:
+                            moves.append(item + [self.wild_card_of_game])#could be simpilfied
             if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
                         list_of_combination = list_combinations(v1, number_of_cards - 2)
-                        for i1 in range(len(list_of_combination)):
-                            moves.append(
-                                list_of_combination[i1] + [self.wild_card_of_game] + [self.wild_card_of_game])
-            moves = [list(t) for t in set(tuple(p) for p in moves)]  # make all moves unique
+                        for item in list_of_combination:
+                            moves.append(item + [self.wild_card_of_game] + [self.wild_card_of_game])
+            moves = make_it_unique(moves)  # make all moves unique
         return moves
 
     def gen_type_3_triple(self):
