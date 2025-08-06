@@ -26,7 +26,7 @@ def get_move_type(move, wild_card_of_game=1):
         return {'type': TYPE_1_SINGLE, 'rank': EnvCard2Rank[move[0]]}
 
     if move_size == 2:
-        if EnvCard2Rank[move[0]] == EnvCard2Rank[move[1]] and EnvCard2Rank[move[0]] != 15 and EnvCard2Rank[move[0]] != 16:
+        if EnvCard2Rank[move[0]] == EnvCard2Rank[move[1]] :
             return {'type': TYPE_2_PAIR, 'rank': EnvCard2Rank[move[0]]}
         elif move[0] == wild_card_of_game and move[1] != 52 and move[1] != 53:
             return {'type': TYPE_2_PAIR, 'rank': EnvCard2Rank[move[1]]}
