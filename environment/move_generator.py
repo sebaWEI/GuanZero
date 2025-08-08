@@ -4,7 +4,7 @@ from environment.utils import list_combinations, make_it_unique
 from environment.utils import EnvCard2Rank, EnvCard2Suit
 
 
-class MoveGenerator(object):
+class MovesGenerator(object):
     """
     Generate possible combinations.
     """

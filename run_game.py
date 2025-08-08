@@ -2,7 +2,7 @@
     
 from environment.move_detector import get_move_type
 from environment.utils import *
-from environment.move_generator import MoveGenerator
+from environment.move_generator import MovesGenerator
 import random
 
 my_cards = []
@@ -14,7 +14,7 @@ while (wild_card_number <=1):
     my_cards.append(wild_card_of_game)
     wild_card_number += 1#add wild card to my cards to make our moves more interesting
 print(f"my cards: {my_cards}")
-Generator = MoveGenerator(my_cards)
+Generator = MovesGenerator(my_cards)
 
 move_to_detect_set=Generator.gen_moves()
 
