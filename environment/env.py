@@ -51,8 +51,7 @@ class Env:
 
     def _get_reward(self):
         winner = self._game_winner
-        bomb_num = self._game_bomb_num
-        if winner == 'player_1' or 'player_3':
+        if winner == 'player_1' or winner == 'player_3':
             return 1.0
         else:
             return -1.0
