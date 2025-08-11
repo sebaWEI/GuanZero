@@ -144,12 +144,16 @@ def _action_seq_list2array(action_seq_list):
 def _get_obs_from_player(info_set):
     player = info_set.player_position
     if player == 'player_1':
+        position_matrix = [1, 0, 0, 0]
         teammate = 'player_3'
     elif player == 'player_2':
+        position_matrix = [0, 1, 0, 0]
         teammate = 'player_4'
     elif player == 'player_3':
+        position_matrix = [0, 0, 1, 0]
         teammate = 'player_1'
     else:
+        position_matrix = [0, 0, 0, 1]
         teammate = 'player_2'
     num_legal_actions = len(info_set.legal_actions)
     my_hand_cards = _cards2array(info_set.player_hand_cards)
@@ -185,7 +189,8 @@ def _get_obs_from_player(info_set):
     teammate_played_cards = _cards2array(info_set.played_cards[teammate])
     teammate_played_cards_batch = np.repeat(teammate_played_cards[np.newaxis, :], num_legal_actions, axis=0)
 
-    x_batch = np.hstack((my_hand_cards_batch,
+    x_batch = np.hstack((position_matrix,
+                         my_hand_cards_batch,
                          other_hand_cards_batch,
                          my_played_cards_batch,
                          teammate_played_cards_batch,
@@ -195,7 +200,8 @@ def _get_obs_from_player(info_set):
                          my_num_cards_left_batch,
                          teammate_num_cards_left_batch,
                          my_action_batch))
-    x_no_action = np.hstack((my_hand_cards,
+    x_no_action = np.hstack((position_matrix,
+                             my_hand_cards,
                              other_hand_cards,
                              my_played_cards,
                              teammate_played_cards,
