@@ -72,7 +72,7 @@ class MovesGenerator(object):
     def gen_type_2_pair(self):
         self.pair_moves = []
         for k, v in self.cards_dict.items():
-            if len(v) >= 2 and k!=EnvCard2Rank[self.wild_card_of_game] and k != 15 and k != 16:#need to check if the card rank is not wild card and not joker
+            if len(v) >= 2 :
                 self.pair_moves += list_combinations(v, 2)
             if self.wild_card_of_game in self.cards_list:
                 for k1, v1 in self.cards_dict.items():
@@ -80,7 +80,6 @@ class MovesGenerator(object):
                         list_of_same_rank = list(set(v1))
                         for i1 in range(len(list_of_same_rank)):
                             self.pair_moves.append([list_of_same_rank[i1], self.wild_card_of_game])
-        self.pair_moves = [list(t) for t in set(tuple(p) for p in self.pair_moves)]
         self.pair_moves = make_it_unique(self.pair_moves)  
         return self.pair_moves
 
