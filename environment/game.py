@@ -296,13 +296,15 @@ class GameEnv(object):
 
         self.acting_player_position = None
 
-        self.last_move_dict = {'landlord': [],
-                               'landlord_up': [],
-                               'landlord_down': []}
+        self.last_move_dict = {'player_1': [],
+                               'player_2': [],
+                               'player_3': [],
+                               'player_4': []}
 
-        self.played_cards = {'landlord': [],
-                             'landlord_up': [],
-                             'landlord_down': []}
+        self.played_cards = {'player_1': [],
+                             'player_2': [],
+                             'player_3': [],
+                             'player_4': []}
 
         self.last_move = []
         self.last_two_moves = []
