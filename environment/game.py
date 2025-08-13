@@ -48,14 +48,15 @@ class GameEnv(object):
     def game_done(self):
         if len(self.info_sets['player_1'].player_hand_cards) == 0:
             self.winner = 'player_1'
+            self.game_over = True
         if len(self.info_sets['player_2'].player_hand_cards) == 0:
             self.winner = 'player_2'
+            self.game_over = True
         if len(self.info_sets['player_3'].player_hand_cards) == 0:
             self.winner = 'player_3'
+            self.game_over = True
         if len(self.info_sets['player_4'].player_hand_cards) == 0:
             self.winner = 'player_4'
-            # if one of the three players discards his hand,
-            # then game is over.
             self.game_over = True
 
     def get_winner(self):
