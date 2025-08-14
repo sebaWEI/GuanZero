@@ -61,6 +61,15 @@ class GameEnv(object):
 
     def get_winner(self):
         return self.winner
+    
+    def get_winning_team(self):
+        if  self.game_over:
+            if self.winner in ['player_1','player_3']:
+                return 'team_1_3'
+            elif self.winner in ['player_2','player_4']:
+                return 'team_2_4'
+            else:
+                return None
 
     def get_last_valid_move(self):
         for move in reversed(self.card_play_action_seq):

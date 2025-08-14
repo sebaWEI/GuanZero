@@ -67,6 +67,10 @@ class Env:
     @property
     def _game_winner(self):
         return self._env.get_winner()
+    
+    @property
+    def _winning_team(self):
+        return self._env.get_winning_team()
 
     @property
     def _acting_player_position(self):
@@ -75,6 +79,7 @@ class Env:
     @property
     def _game_over(self):
         return self._env.game_over
+    
 
 
 class DummyAgent(object):
@@ -142,6 +147,7 @@ def _action_seq_list2array(action_seq_list):
 
 
 def _get_obs_from_player(info_set):
+    num_legal_actions = len(info_set.legal_actions)
     player = info_set.player_position
     if player == 'player_1':
         position_matrix = [1, 0, 0, 0]
@@ -155,7 +161,8 @@ def _get_obs_from_player(info_set):
     else:
         position_matrix = [0, 0, 0, 1]
         teammate = 'player_2'
-    num_legal_actions = len(info_set.legal_actions)
+
+    position_matrix_batch = np.repeat(np.array(position_matrix)[np.newaxis,:],num_legal_actions,axis = 0) 
     my_hand_cards = _cards2array(info_set.player_hand_cards)
     my_hand_cards_batch = np.repeat(my_hand_cards[np.newaxis, :], num_legal_actions, axis=0)
 
@@ -189,7 +196,7 @@ def _get_obs_from_player(info_set):
     teammate_played_cards = _cards2array(info_set.played_cards[teammate])
     teammate_played_cards_batch = np.repeat(teammate_played_cards[np.newaxis, :], num_legal_actions, axis=0)
 
-    x_batch = np.hstack((position_matrix,
+    x_batch = np.hstack((position_matrix_batch,
                          my_hand_cards_batch,
                          other_hand_cards_batch,
                          my_played_cards_batch,

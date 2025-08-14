@@ -62,5 +62,5 @@ class Model:
     def parameters(self):
         return self.models.parameters()
     
-    def get_model(self)
+    def get_model(self):
         return self.model
