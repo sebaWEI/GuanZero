@@ -11,10 +11,73 @@ from torch import multiprocessing as mp
 
 from .env_utils import Environment
 from environment.env import Env
-#from douzero.env.env import _cards2array
+from environment.env import _cards2array
+
+shandle = logging.StreamHandler()
+shandle.setFormatter(
+    logging.Formatter(
+        '[%(levelname)s:%(process)d %(module)s:%(lineno)d %(asctime)s] '
+        '%(message)s'))
+log = logging.getLogger('guandzero')
+log.propagate = False
+log.addHandler(shandle)
+log.setLevel(logging.INFO)
 
 def create_env(flags):
     return Env()
+
+Buffers = typing.Dict[str, typing.List[torch.Tensor]]
+def create_buffers(flags,device_iterator):
+    '''
+    we create buffers for different devices,
+    but each buffer storages all data from 4 players
+    '''
+    T = flags.unroll_length
+    buffers = {}
+    for device in device_iterator:
+        buffers[device] = {}
+        x_dim = #x_no_action 的维度
+        z_shape = #z的形状
+        specs = dict(
+            done = dict(size = (T,),dtype = torch.bool),
+            episode_return=dict(size=(T,), dtype=torch.float32),
+            target=dict(size=(T,), dtype=torch.float32),
+            obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
+            obs_action=dict(size=(T, 54), dtype=torch.int8),
+            obs_z=dict(size=(T, )+z_shape, dtype=torch.int8),
+        )
+        _buffers : Buffers = {key:[] for key in specs}
+        for _ in range(flags.num_buffers):
+            for key in _buffers:
+                if not device == "cpu":
+                    _buffer = torch.empty(**specs[key]).to(torch.device('cuda:'+str(device))).share_memory_()
+                    _buffers[key].append(_buffer)
+        buffers[device] = _buffers
+        return buffers
+    
+def create_optimizer(flags,learner_model):
+    optimizer = torch.optim.Adam(
+        learner_model.parameters(),
+        lr = flags.learning_rate,
+        eps=flags.epsilon
+    )
+    return optimizer
+
+def get_batch(free_queue,
+              full_queue,
+              buffers,
+              flags,
+              lock):
+    with lock:
+         indices = [full_queue.get() for _ in range(flags.batch_size)]
+    batch = {
+        key: torch.stack([buffers[key][m] for m in indices], dim=1)
+        for key in buffers
+    }
+    for m in indices:
+        free_queue.put(m)
+    return batch
+        
 
 def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
 
@@ -51,7 +114,6 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
                 _action_idx = int(agent_output['action'].cpu().item())
                 action = obs['legal_actions'][_action_idx]
                 
-                #    需要一个辅助函数将原始动作格式化为Tensor
                 obs_action_buf.append(_cards2tensor(action))
                 size += 1
                 position, next_obs, env_output = env.step(action)
@@ -108,3 +170,11 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
         traceback.print_exc()
         print()
         raise e
+    
+def _cards2tensor(list_cards):
+    matrix = _cards2array(list_cards)
+    matrix = torch.from_numpy(matrix)
+    return matrix
+
+
+
