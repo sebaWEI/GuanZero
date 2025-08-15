@@ -1,6 +1,6 @@
 from copy import deepcopy
-from move_generator import MovesGenerator
-import move_detector as md, move_selector as ms
+from environment.move_generator import MovesGenerator
+import environment.move_detector as md, environment.move_selector as ms
 
 
 class GameEnv(object):
