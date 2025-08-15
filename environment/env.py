@@ -223,7 +223,7 @@ def _get_obs_from_player(info_set):
         z[np.newaxis, :, :],
         num_legal_actions, axis=0)
     obs = {
-        'position': 'landlord_up',
+        'position': player,
         'x_batch': x_batch.astype(np.float32),
         'z_batch': z_batch.astype(np.float32),
         'legal_actions': info_set.legal_actions,
