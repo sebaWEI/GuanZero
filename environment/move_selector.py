@@ -1,5 +1,5 @@
 # under the same card type, select all moves that are larger than rival move
-from move_detector import get_move_info
+from .move_detector import get_move_info
 
 
 def common_filter(moves, rival_move):
