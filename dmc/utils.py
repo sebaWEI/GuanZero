@@ -51,9 +51,11 @@ def create_buffers(flags,device_iterator):
             for key in _buffers:
                 if not device == "cpu":
                     _buffer = torch.empty(**specs[key]).to(torch.device('cuda:'+str(device))).share_memory_()
-                    _buffers[key].append(_buffer)
+                else:
+                    _buffer = torch.empty(**specs[key]).to(torch.device('cpu')).share_memory_()
+                _buffers[key].append(_buffer)
         buffers[device] = _buffers
-        return buffers
+    return buffers
     
 def create_optimizer(flags,learner_model):
     optimizer = torch.optim.Adam(
@@ -123,7 +125,7 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
                     winning_team = env.env._winning_team
                     new_targets = []
                     for player_position in player_position_buf:
-                        player_team = 'team_1_3' if player_position in [0, 2] else 'team_2_4'
+                        player_team = 'team_1_3' if player_position in ['player_1', 'player_3'] else 'team_2_4'
                         if player_team == winning_team:
                             new_targets.append(1.0)
                         else:
@@ -141,6 +143,7 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
                         player_position_buf = []
                     break
 
+            while size>T:
                 index = free_queue.get()
                 if index is None:  
                     break
@@ -166,7 +169,7 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
     except KeyboardInterrupt:
         pass  
     except Exception as e:
-        log.error('Exception in worker process %i', i)
+        log.error('Exception in worker process %i', actor_id)
         traceback.print_exc()
         print()
         raise e
