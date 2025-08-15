@@ -67,7 +67,7 @@ class Env:
     @property
     def _game_winner(self):
         return self._env.get_winner()
-    
+
     @property
     def _winning_team(self):
         return self._env.get_winning_team()
@@ -79,7 +79,6 @@ class Env:
     @property
     def _game_over(self):
         return self._env.game_over
-    
 
 
 class DummyAgent(object):
@@ -109,10 +108,10 @@ def get_obs(info_set):
 
     `z`: same as z_batch but not a batch.
     """
-    return _get_obs_from_player(info_set)
+    return get_obs_from_player(info_set)
 
 
-def _cards2array(list_cards):
+def cards2array(list_cards):
     if len(list_cards) == 0:
         return np.zeros(54, dtype=np.int8)
 
@@ -123,13 +122,13 @@ def _cards2array(list_cards):
     return matrix
 
 
-def _get_one_hot_array(num_left_cards):
+def get_one_hot_array(num_left_cards):
     one_hot = np.zeros(27)
     one_hot[num_left_cards - 1] = 1
     return one_hot
 
 
-def _process_action_seq(sequence, length=15):
+def process_action_seq(sequence, length=15):
     sequence = sequence[-length:].copy()
     if len(sequence) < length:
         empty_sequence = [[] for _ in range(length - len(sequence))]
@@ -138,15 +137,15 @@ def _process_action_seq(sequence, length=15):
     return sequence
 
 
-def _action_seq_list2array(action_seq_list):
+def action_seq_list2array(action_seq_list):
     action_seq_array = np.zeros((len(action_seq_list), 54))
     for row, list_cards in enumerate(action_seq_list):
-        action_seq_array[row, :] = _cards2array(list_cards)
+        action_seq_array[row, :] = cards2array(list_cards)
     action_seq_array = action_seq_array.reshape(5, 162)
     return action_seq_array
 
 
-def _get_obs_from_player(info_set):
+def get_obs_from_player(info_set):
     num_legal_actions = len(info_set.legal_actions)
     player = info_set.player_position
     if player == 'player_1':
@@ -162,38 +161,38 @@ def _get_obs_from_player(info_set):
         position_matrix = [0, 0, 0, 1]
         teammate = 'player_2'
 
-    position_matrix_batch = np.repeat(np.array(position_matrix)[np.newaxis,:],num_legal_actions,axis = 0) 
-    my_hand_cards = _cards2array(info_set.player_hand_cards)
+    position_matrix_batch = np.repeat(np.array(position_matrix)[np.newaxis, :], num_legal_actions, axis=0)
+    my_hand_cards = cards2array(info_set.player_hand_cards)
     my_hand_cards_batch = np.repeat(my_hand_cards[np.newaxis, :], num_legal_actions, axis=0)
 
-    other_hand_cards = _cards2array(info_set.other_hand_cards)
+    other_hand_cards = cards2array(info_set.other_hand_cards)
     other_hand_cards_batch = np.repeat(other_hand_cards[np.newaxis, :], num_legal_actions, axis=0)
 
-    last_action = _cards2array(info_set.last_move)
+    last_action = cards2array(info_set.last_move)
     last_action_batch = np.repeat(last_action[np.newaxis, :], num_legal_actions, axis=0)
 
     my_action_batch = np.zeros(my_hand_cards_batch.shape)
     for j, action in enumerate(info_set.legal_actions):
-        my_action_batch[j, :] = _cards2array(action)
+        my_action_batch[j, :] = cards2array(action)
 
-    my_last_action = _cards2array(
+    my_last_action = cards2array(
         info_set.last_move_dict[player])
     my_last_action_batch = np.repeat(
         my_last_action[np.newaxis, :],
         num_legal_actions, axis=0)
-    my_num_cards_left = _get_one_hot_array(info_set.num_cards_left_dict[player])
+    my_num_cards_left = get_one_hot_array(info_set.num_cards_left_dict[player])
     my_num_cards_left_batch = np.repeat(my_num_cards_left[np.newaxis, :], num_legal_actions, axis=0)
 
-    my_played_cards = _cards2array(
+    my_played_cards = cards2array(
         info_set.played_cards[player])
     my_played_cards_batch = np.repeat(my_played_cards[np.newaxis, :], num_legal_actions, axis=0)
 
-    last_teammate_action = _cards2array(info_set.last_move_dict[teammate])
+    last_teammate_action = cards2array(info_set.last_move_dict[teammate])
     last_teammate_action_batch = np.repeat(last_teammate_action[np.newaxis, :], num_legal_actions, axis=0)
-    teammate_num_cards_left = _get_one_hot_array(info_set.num_cards_left_dict[teammate])
+    teammate_num_cards_left = get_one_hot_array(info_set.num_cards_left_dict[teammate])
     teammate_num_cards_left_batch = np.repeat(teammate_num_cards_left[np.newaxis, :], num_legal_actions, axis=0)
 
-    teammate_played_cards = _cards2array(info_set.played_cards[teammate])
+    teammate_played_cards = cards2array(info_set.played_cards[teammate])
     teammate_played_cards_batch = np.repeat(teammate_played_cards[np.newaxis, :], num_legal_actions, axis=0)
 
     x_batch = np.hstack((position_matrix_batch,
@@ -217,7 +216,7 @@ def _get_obs_from_player(info_set):
                              last_teammate_action,
                              my_num_cards_left,
                              teammate_num_cards_left))
-    z = _action_seq_list2array(_process_action_seq(
+    z = action_seq_list2array(process_action_seq(
         info_set.card_play_action_seq))
     z_batch = np.repeat(
         z[np.newaxis, :, :],
