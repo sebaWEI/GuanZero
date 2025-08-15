@@ -1,6 +1,6 @@
 from copy import deepcopy
-from environment.move_generator import MovesGenerator
-import environment.move_detector as md, environment.move_selector as ms
+from .move_generator import MovesGenerator
+from . import move_detector as md, move_selector as ms
 
 
 class GameEnv(object):
@@ -21,6 +21,16 @@ class GameEnv(object):
 
         self.last_move = []
         self.last_two_moves = []
+
+        self.num_wins = {'player_1': 0,
+                         'player_2': 0,
+                         'player_3': 0,
+                         'player_4': 0}
+
+        self.scores = {'player_1': 0,
+                       'player_2': 0,
+                       'player_3': 0,
+                       'player_4': 0}
 
         self.played_cards = {'player_1': [],
                              'player_2': [],
@@ -48,25 +58,37 @@ class GameEnv(object):
     def game_done(self):
         if len(self.info_sets['player_1'].player_hand_cards) == 0:
             self.winner = 'player_1'
+            self.num_wins['player_1'] += 1
+            self.scores['player_1'] += 3
+            self.scores['player_3'] += 1
             self.game_over = True
         if len(self.info_sets['player_2'].player_hand_cards) == 0:
             self.winner = 'player_2'
+            self.num_wins['player_2'] += 1
+            self.scores['player_2'] += 3
+            self.scores['player_4'] += 1
             self.game_over = True
         if len(self.info_sets['player_3'].player_hand_cards) == 0:
             self.winner = 'player_3'
+            self.num_wins['player_3'] += 1
+            self.scores['player_3'] += 3
+            self.scores['player_1'] += 1
             self.game_over = True
         if len(self.info_sets['player_4'].player_hand_cards) == 0:
             self.winner = 'player_4'
+            self.num_wins['player_4'] += 1
+            self.scores['player_4'] += 3
+            self.scores['player_2'] += 1
             self.game_over = True
 
     def get_winner(self):
         return self.winner
-    
+
     def get_winning_team(self):
-        if  self.game_over:
-            if self.winner in ['player_1','player_3']:
+        if self.game_over:
+            if self.winner in ['player_1', 'player_3']:
                 return 'team_1_3'
-            elif self.winner in ['player_2','player_4']:
+            elif self.winner in ['player_2', 'player_4']:
                 return 'team_2_4'
             else:
                 return None
