@@ -12,7 +12,7 @@ from torch import nn
 
 from .file_writer import FileWriter
 from .model import Model
-from .utils import get_batch, log, create_env, create_buffers, create_optimizer, act
+from .utils import get_batch, log, create_buffers, create_optimizer, act
 
 mean_episode_return_buf = deque(maxlen = 100)
 
