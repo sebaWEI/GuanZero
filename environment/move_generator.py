@@ -1,7 +1,7 @@
 import collections
 import itertools
-from environment.utils import list_combinations, make_it_unique
-from environment.utils import EnvCard2Rank, EnvCard2Suit
+from .utils import list_combinations, make_it_unique
+from .utils import EnvCard2Rank, EnvCard2Suit
 
 
 class MovesGenerator(object):
