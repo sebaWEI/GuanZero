@@ -3,10 +3,22 @@ from .move_generator import MovesGenerator
 from . import move_detector as md, move_selector as ms
 
 
+def get_team_mate(player):
+    if player == 'player_1':
+        return 'player_3'
+    elif player == 'player_2':
+        return 'player_4'
+    elif player == 'player_3':
+        return 'player_1'
+    else:
+        return 'player_2'
+
+
 class GameEnv(object):
     def __init__(self, players):
         self.card_play_action_seq = []
         self.card_play_type_seq = []
+        self.players_remain = ['player_1', 'player_2', 'player_3', 'player_4']
 
         self.game_over = False
 
@@ -44,42 +56,41 @@ class GameEnv(object):
 
         self.game_info_set = None
         self.winner = None
+        self.players_rank = {'player_1': None,
+                             'player_2': None,
+                             'player_3': None,
+                             'player_4': None}
         self.bomb_num = 0
         self.last_pid = 'player_1'
+        self.free_type_right = False
+        self.no_free_type_right = False
 
     def card_play_init(self, player_hand_dict):
         self.info_sets['player_1'].player_hand_cards = player_hand_dict['player_1']
         self.info_sets['player_2'].player_hand_cards = player_hand_dict['player_2']
         self.info_sets['player_3'].player_hand_cards = player_hand_dict['player_3']
         self.info_sets['player_4'].player_hand_cards = player_hand_dict['player_4']
-        self.get_acting_player_position()
+        self.pass_acting_player_position()
         self.game_info_set = self.get_info_set()
 
     def game_done(self):
-        if len(self.info_sets['player_1'].player_hand_cards) == 0:
-            self.winner = 'player_1'
-            self.num_wins['player_1'] += 1
-            self.scores['player_1'] += 3
-            self.scores['player_3'] += 1
-            self.game_over = True
-        if len(self.info_sets['player_2'].player_hand_cards) == 0:
-            self.winner = 'player_2'
-            self.num_wins['player_2'] += 1
-            self.scores['player_2'] += 3
-            self.scores['player_4'] += 1
-            self.game_over = True
-        if len(self.info_sets['player_3'].player_hand_cards) == 0:
-            self.winner = 'player_3'
-            self.num_wins['player_3'] += 1
-            self.scores['player_3'] += 3
-            self.scores['player_1'] += 1
-            self.game_over = True
-        if len(self.info_sets['player_4'].player_hand_cards) == 0:
-            self.winner = 'player_4'
-            self.num_wins['player_4'] += 1
-            self.scores['player_4'] += 3
-            self.scores['player_2'] += 1
-            self.game_over = True
+        if len(self.players_remain) == 4:
+            for player in self.players_remain:
+                if len(self.info_sets[player].player_hand_cards) == 0:
+                    self.update_players_list()
+                    self.winner = player
+                    self.num_wins[player] += 1
+                    self.scores[player] += 3
+        if len(self.players_remain) == 3:
+            for player in self.players_remain:
+                if len(self.info_sets[player].player_hand_cards) == 0:
+                    self.update_players_list()
+                    self.scores[player] += 2
+        if len(self.players_remain) == 2:
+            for player in self.players_remain:
+                if len(self.info_sets[player].player_hand_cards) == 0:
+                    self.update_players_list()
+                    self.scores[player] += 1
 
     def get_winner(self):
         return self.winner
@@ -106,27 +117,74 @@ class GameEnv(object):
             last_two_moves = last_two_moves[:2]
         return last_two_moves
 
-    def get_acting_player_position(self):
-        if self.acting_player_position is None:
-            self.acting_player_position = 'player_1'
-
-        else:
-            if self.acting_player_position == 'player_1':
-                self.acting_player_position = 'player_2'
-
-            elif self.acting_player_position == 'player_2':
-                self.acting_player_position = 'player_3'
-
-            elif self.acting_player_position == 'player_3':
-                self.acting_player_position = 'player_4'
-
-            elif self.acting_player_position == 'player_4':
+    def pass_acting_player_position(self):
+        if len(self.players_remain) == 4:
+            if self.acting_player_position is None:
                 self.acting_player_position = 'player_1'
 
             else:
-                self.acting_player_position = 'player_1'
+                if self.acting_player_position == 'player_1':
+                    self.acting_player_position = 'player_2'
+
+                elif self.acting_player_position == 'player_2':
+                    self.acting_player_position = 'player_3'
+
+                elif self.acting_player_position == 'player_3':
+                    self.acting_player_position = 'player_4'
+
+                elif self.acting_player_position == 'player_4':
+                    self.acting_player_position = 'player_1'
+
+                else:
+                    self.acting_player_position = 'player_1'
+
+        if len(self.players_remain) == 3:
+            self.acting_player_position = self.players_remain[
+                (self.players_remain.index(self.acting_player_position) + 1) % 3]
+
+        if len(self.players_remain) == 2:
+            self.acting_player_position = [p for p in self.players_remain if p != self.acting_player_position][0]
 
         return self.acting_player_position
+
+    def update_players_list(self):
+        """
+        update the list of players and get the new acting position.
+        main functions: pass turn, record player's rank.
+        """
+        player_out = self.acting_player_position
+        teammate = get_team_mate(player_out)
+        self.players_remain.remove(self.acting_player_position)
+        self.pass_acting_player_position()
+        self.step()
+        if len(self.players_remain) == 3:
+            self.players_rank[player_out] = 1
+            if self.card_play_action_seq[-1] == []:
+                self.step()
+                if self.card_play_action_seq[-1] == []:
+                    self.no_free_type_right = True
+                    self.step()
+                    if self.card_play_action_seq[-1] == []:
+                        self.acting_player_position = teammate
+                        self.free_type_right = True
+        elif len(self.players_remain) == 2:
+            self.players_rank[player_out] = 2
+            if teammate in self.players_remain:
+                if teammate == self.players_remain[-1]:
+                    if self.card_play_action_seq[-1] == []:
+                        self.acting_player_position = teammate
+                        self.free_type_right = True
+                if teammate == self.players_remain[0]:
+                    self.acting_player_position = teammate
+                    self.free_type_right = True
+            elif teammate not in self.players_remain:
+                self.players_rank[self.players_remain[0]] = 3
+                self.players_rank[self.players_remain[-1]] = 4
+                self.game_over = True
+        elif len(self.players_remain) == 1:
+            self.players_rank[player_out] = 3
+            self.players_rank[self.players_remain[0]] = 4
+            self.game_over = True
 
     def get_legal_card_play_actions(self):
         mg = MovesGenerator(
@@ -137,15 +195,35 @@ class GameEnv(object):
 
         rival_move = []
         rival_type = None
-        if len(action_sequence) != 0:
-            if len(action_sequence[-1]) == 0:
-                if len(action_sequence[-2]) == 0:
-                    rival_move = action_sequence[-3]
-                    rival_type = type_sequence[-3]
+
+        if self.free_type_right:
+            moves = mg.gen_moves()
+            self.free_type_right = False
+            return moves
+
+        if len(self.players_remain) == 4 or self.no_free_type_right:
+            self.no_free_type_right = False
+            if len(action_sequence) != 0:
+                if len(action_sequence[-1]) == 0:
+                    if len(action_sequence[-2]) == 0:
+                        rival_move = action_sequence[-3]
+                        rival_type = type_sequence[-3]
+                    else:
+                        rival_move = action_sequence[-2]
+                        rival_type = type_sequence[-2]
                 else:
+                    rival_move = action_sequence[-1]
+                    rival_type = type_sequence[-1]
+        elif len(self.players_remain) == 3 and self.no_free_type_right is False:
+            if len(action_sequence) != 0:
+                if len(action_sequence[-1]) == 0:
                     rival_move = action_sequence[-2]
                     rival_type = type_sequence[-2]
-            else:
+                else:
+                    rival_move = action_sequence[-1]
+                    rival_type = type_sequence[-1]
+        elif len(self.players_remain) == 2:
+            if len(action_sequence) != 0:
                 rival_move = action_sequence[-1]
                 rival_type = type_sequence[-1]
 
@@ -269,7 +347,7 @@ class GameEnv(object):
 
         self.game_done()
         if not self.game_over:
-            self.get_acting_player_position()
+            self.pass_acting_player_position()
             self.game_info_set = self.get_info_set()
 
     def update_acting_player_hand_cards(self, action):
@@ -323,31 +401,39 @@ class GameEnv(object):
     def reset(self):
         self.card_play_action_seq = []
         self.card_play_type_seq = []
+        self.players_remain = ['player_1', 'player_2', 'player_3', 'player_4']
 
         self.game_over = False
 
         self.acting_player_position = None
-
-        self.last_move_dict = {'player_1': [],
-                               'player_2': [],
-                               'player_3': [],
-                               'player_4': []}
-
-        self.played_cards = {'player_1': [],
-                             'player_2': [],
-                             'player_3': [],
-                             'player_4': []}
-
-        self.last_move = []
-        self.last_two_moves = []
 
         self.info_sets = {'player_1': InfoSet('player_1'),
                           'player_2': InfoSet('player_2'),
                           'player_3': InfoSet('player_3'),
                           'player_4': InfoSet('player_4')}
 
+        self.last_move = []
+        self.last_two_moves = []
+
+        self.played_cards = {'player_1': [],
+                             'player_2': [],
+                             'player_3': [],
+                             'player_4': []}
+
+        self.last_move_dict = {'player_1': [],
+                               'player_2': [],
+                               'player_3': [],
+                               'player_4': []}
+
+        self.winner = None
+        self.players_rank = {'player_1': None,
+                             'player_2': None,
+                             'player_3': None,
+                             'player_4': None}
         self.bomb_num = 0
         self.last_pid = 'player_1'
+        self.free_type_right = False
+        self.no_free_type_right = False
 
 
 class InfoSet(object):
