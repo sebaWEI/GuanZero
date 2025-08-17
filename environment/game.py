@@ -64,6 +64,9 @@ class GameEnv(object):
         self.last_pid = 'player_1'
         self.free_type_right = False
         self.no_free_type_right = False
+        self.pending_free_type_check = False
+        self.pending_round_start = 0
+        self.out_players = []
 
     def card_play_init(self, player_hand_dict):
         self.info_sets['player_1'].player_hand_cards = player_hand_dict['player_1']
@@ -143,45 +146,59 @@ class GameEnv(object):
                 (self.players_remain.index(self.acting_player_position) + 1) % 3]
 
         if len(self.players_remain) == 2:
-            self.acting_player_position = [p for p in self.players_remain if p != self.acting_player_position][0]
+            # Switch to the other remaining player
+            other_player = [p for p in self.players_remain if p != self.acting_player_position]
+            if other_player:
+                self.acting_player_position = other_player[0]
 
         return self.acting_player_position
+
+    def get_out_player_from_history(self):
+        if self.out_players:
+            return self.out_players[-1]
+        return None
 
     def update_players_list(self):
         """
         update the list of players and get the new acting position.
         main functions: pass turn, record player's rank.
         """
-        player_out = self.acting_player_position
+        player_out = self.players_remain[
+            (self.players_remain.index(self.acting_player_position) + 2) % len(self.players_remain)]
         teammate = get_team_mate(player_out)
-        self.players_remain.remove(self.acting_player_position)
-        self.pass_acting_player_position()
-        self.step()
-        if len(self.players_remain) == 3:
+
+        # Record player's rank
+        if len(self.players_remain) == 4:
             self.players_rank[player_out] = 1
-            if self.card_play_action_seq[-1] == []:
-                self.step()
-                if self.card_play_action_seq[-1] == []:
-                    self.no_free_type_right = True
-                    self.step()
-                    if self.card_play_action_seq[-1] == []:
-                        self.acting_player_position = teammate
-                        self.free_type_right = True
+        elif len(self.players_remain) == 3:
+            self.players_rank[player_out] = 2
+        elif len(self.players_remain) == 2:
+            self.players_rank[player_out] = 3
+
+        self.out_players.append(player_out)
+
+        # Remove player from remaining list
+        self.players_remain.remove(player_out)
+
+        # Update acting player position
+        self.pass_acting_player_position()
+
+        if len(self.players_remain) == 3:
+            self.pending_free_type_check = True
+            self.pending_round_start = len(self.card_play_action_seq)
         elif len(self.players_remain) == 2:
             self.players_rank[player_out] = 2
             if teammate in self.players_remain:
-                if teammate == self.players_remain[-1]:
-                    if self.card_play_action_seq[-1] == []:
-                        self.acting_player_position = teammate
-                        self.free_type_right = True
                 if teammate == self.players_remain[0]:
                     self.acting_player_position = teammate
                     self.free_type_right = True
-            elif teammate not in self.players_remain:
+            else:
+                # Both teammates are out, game ends
                 self.players_rank[self.players_remain[0]] = 3
-                self.players_rank[self.players_remain[-1]] = 4
+                self.players_rank[self.players_remain[1]] = 4
                 self.game_over = True
         elif len(self.players_remain) == 1:
+            # Last player
             self.players_rank[player_out] = 3
             self.players_rank[self.players_remain[0]] = 4
             self.game_over = True
@@ -320,6 +337,19 @@ class GameEnv(object):
         return self.bomb_num
 
     def step(self):
+        if self.pending_free_type_check:
+            current_round_actions = self.card_play_action_seq[self.pending_round_start:]
+            if len(current_round_actions) >= len(self.players_remain):
+                if all(action == [] for action in current_round_actions):
+                    out_player = self.get_out_player_from_history()
+                    if out_player:
+                        teammate = get_team_mate(out_player)
+                        if teammate in self.players_remain:
+                            self.acting_player_position = teammate
+                            self.free_type_right = True
+                self.pending_free_type_check = False
+                self.pending_round_start = 0
+
         action = self.players[self.acting_player_position].act(
             self.game_info_set)
         assert action in self.game_info_set.legal_actions
@@ -330,7 +360,7 @@ class GameEnv(object):
         if len(action) > 0:
             self.last_pid = self.acting_player_position
 
-        if action_type in [md.TYPE_0_PASS, md.TYPE_8_BOMB_4, md.TYPE_9_BOMB_5,
+        if action_type in [md.TYPE_8_BOMB_4, md.TYPE_9_BOMB_5,
                            md.TYPE_10_STRAIGHT_FLUSH, md.TYPE_11_BOMB_6,
                            md.TYPE_12_BOMB_7, md.TYPE_13_BOMB_8, md.TYPE_14_JOKER_BOMB]:
             self.bomb_num += 1
@@ -434,6 +464,9 @@ class GameEnv(object):
         self.last_pid = 'player_1'
         self.free_type_right = False
         self.no_free_type_right = False
+        self.pending_free_type_check = False
+        self.pending_round_start = 0
+        self.out_players = []
 
 
 class InfoSet(object):
