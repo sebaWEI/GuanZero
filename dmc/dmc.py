@@ -41,7 +41,6 @@ def learn(learner_model,
     episode_returns = batch['episode_return'][batch['done']]
     if episode_returns.numel() > 0:
         mean_episode_return_buf.append(torch.mean(episode_returns).item())
-    #to device的作用是什么？
 
     learner_outputs = learner_model(obs_z, obs_x, return_value=True)
     loss = compute_loss(learner_outputs['values'], target)
