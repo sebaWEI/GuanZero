@@ -181,15 +181,14 @@ def get_move_info(move, wild_card_of_game=1):
                 return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': sorted_rank_without_wild_card[0]}  # 222333
 
         if number_of_wild_cards == 1:
-            if sorted(rank2number.values()) == [1, 2, 2] and sorted(number2rank.values())[0][0] + 2 == \
-                    sorted(number2rank.values())[1][0] + 1 == sorted(number2rank.values())[1][1] \
-                    and sorted(number2rank.values())[1][1] <= 14:
-                return {'type': TYPE_6_SERIAL_PAIR, 'rank': sorted_rank_without_wild_card[0]}  # 22334x
-            if sorted(rank2number.values()) == [2, 3] and sorted(number2rank.values())[0][0] + 1 == \
-                    sorted(number2rank.values())[1][0] \
-                    and sorted(number2rank.values())[1][0] <= 14:
-                return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': sorted_rank_without_wild_card[0]}  # 22233x
-
+            # 首先检查number2rank是否有足够的键值对
+            if sorted(rank2number.values()) == [1, 2, 2] and len(number2rank) >= 2:
+                # 然后再安全地访问索引
+                sorted_values = sorted(number2rank.values())
+                if len(sorted_values) >= 2 and len(sorted_values[0]) > 0 and len(sorted_values[1]) >= 2:
+                    if sorted_values[0][0] + 2 == sorted_values[1][0] + 1 == sorted_values[1][1] \
+                            and sorted_values[1][1] <= 14:
+                        return {'type': TYPE_6_SERIAL_PAIR, 'rank': sorted_rank_without_wild_card[0]}  # 22334x
         if number_of_wild_cards == 2:
             if sorted(rank2number.values()) == [1, 1, 2] and sorted(number2rank.values())[0][0] + 2 == \
                     sorted(number2rank.values())[0][1] + 1 == sorted(number2rank.values())[1][0] \

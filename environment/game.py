@@ -67,6 +67,8 @@ class GameEnv(object):
         self.pending_free_type_check = False
         self.pending_round_start = 0
         self.out_players = []
+        self.player_follows = None
+        self.updated_position_outside = False
 
     def card_play_init(self, player_hand_dict):
         self.info_sets['player_1'].player_hand_cards = player_hand_dict['player_1']
@@ -77,23 +79,22 @@ class GameEnv(object):
         self.game_info_set = self.get_info_set()
 
     def game_done(self):
-        if len(self.players_remain) == 4:
-            for player in self.players_remain:
-                if len(self.info_sets[player].player_hand_cards) == 0:
-                    self.update_players_list()
-                    self.winner = player
-                    self.num_wins[player] += 1
-                    self.scores[player] += 3
-        if len(self.players_remain) == 3:
-            for player in self.players_remain:
-                if len(self.info_sets[player].player_hand_cards) == 0:
-                    self.update_players_list()
-                    self.scores[player] += 2
-        if len(self.players_remain) == 2:
-            for player in self.players_remain:
-                if len(self.info_sets[player].player_hand_cards) == 0:
-                    self.update_players_list()
-                    self.scores[player] += 1
+        # 检查当前行动玩家是否出完牌
+        if len(self.info_sets[self.acting_player_position].player_hand_cards) == 0:
+            self.player_follows = self.players_remain[
+                (self.players_remain.index(self.acting_player_position) + 1) % len(self.players_remain)]
+            # 直接将当前行动玩家作为出局玩家传递给update_players_list
+            self.update_players_list(self.acting_player_position)
+
+            # 根据剩余玩家数量更新分数
+            if len(self.players_remain) == 4:
+                self.winner = self.acting_player_position
+                self.num_wins[self.acting_player_position] += 1
+                self.scores[self.acting_player_position] += 3
+            elif len(self.players_remain) == 3:
+                self.scores[self.acting_player_position] += 2
+            elif len(self.players_remain) == 2:
+                self.scores[self.acting_player_position] += 1
 
     def get_winner(self):
         return self.winner
@@ -121,7 +122,10 @@ class GameEnv(object):
         return last_two_moves
 
     def pass_acting_player_position(self):
-        if len(self.players_remain) == 4:
+        if self.player_follows:
+            self.acting_player_position = self.player_follows
+            self.player_follows = None
+        elif len(self.players_remain) == 4:
             if self.acting_player_position is None:
                 self.acting_player_position = 'player_1'
 
@@ -141,11 +145,11 @@ class GameEnv(object):
                 else:
                     self.acting_player_position = 'player_1'
 
-        if len(self.players_remain) == 3:
+        elif len(self.players_remain) == 3:
             self.acting_player_position = self.players_remain[
                 (self.players_remain.index(self.acting_player_position) + 1) % 3]
 
-        if len(self.players_remain) == 2:
+        elif len(self.players_remain) == 2:
             # Switch to the other remaining player
             other_player = [p for p in self.players_remain if p != self.acting_player_position]
             if other_player:
@@ -158,16 +162,18 @@ class GameEnv(object):
             return self.out_players[-1]
         return None
 
-    def update_players_list(self):
+    def update_players_list(self, player_out=None):
+        """更新玩家列表并获取新的行动位置。
+        主要功能：传递回合，记录玩家排名。
         """
-        update the list of players and get the new acting position.
-        main functions: pass turn, record player's rank.
-        """
-        player_out = self.players_remain[
-            (self.players_remain.index(self.acting_player_position) + 2) % len(self.players_remain)]
+        if player_out is None:
+            # 原有的计算逻辑，用于向后兼容
+            player_out = self.players_remain[
+                (self.players_remain.index(self.acting_player_position) - 1 + len(self.players_remain)) % len(
+                    self.players_remain)]
         teammate = get_team_mate(player_out)
 
-        # Record player's rank
+        # 记录玩家排名
         if len(self.players_remain) == 4:
             self.players_rank[player_out] = 1
         elif len(self.players_remain) == 3:
@@ -180,17 +186,14 @@ class GameEnv(object):
         # Remove player from remaining list
         self.players_remain.remove(player_out)
 
-        # Update acting player position
-        self.pass_acting_player_position()
-
         if len(self.players_remain) == 3:
             self.pending_free_type_check = True
             self.pending_round_start = len(self.card_play_action_seq)
         elif len(self.players_remain) == 2:
-            self.players_rank[player_out] = 2
             if teammate in self.players_remain:
                 if teammate == self.players_remain[0]:
                     self.acting_player_position = teammate
+                    self.updated_position_outside = True
                     self.free_type_right = True
             else:
                 # Both teammates are out, game ends
@@ -377,7 +380,10 @@ class GameEnv(object):
 
         self.game_done()
         if not self.game_over:
-            self.pass_acting_player_position()
+            if self.updated_position_outside:
+                self.updated_position_outside = False
+            else:
+                self.pass_acting_player_position()
             self.game_info_set = self.get_info_set()
 
     def update_acting_player_hand_cards(self, action):
