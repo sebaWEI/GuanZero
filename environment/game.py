@@ -81,20 +81,21 @@ class GameEnv(object):
     def game_done(self):
         # 检查当前行动玩家是否出完牌
         if len(self.info_sets[self.acting_player_position].player_hand_cards) == 0:
+            # 记录出牌前的剩余玩家数量，用于正确结算分数与首胜判断
+            remain_before = len(self.players_remain)
             self.player_follows = self.players_remain[
                 (self.players_remain.index(self.acting_player_position) + 1) % len(self.players_remain)]
-            # 直接将当前行动玩家作为出局玩家传递给update_players_list
-            self.update_players_list(self.acting_player_position)
-
-            # 根据剩余玩家数量更新分数
-            if len(self.players_remain) == 4:
+            # 根据出局前的剩余玩家数量更新分数
+            if remain_before == 4:
                 self.winner = self.acting_player_position
                 self.num_wins[self.acting_player_position] += 1
                 self.scores[self.acting_player_position] += 3
-            elif len(self.players_remain) == 3:
+            elif remain_before == 3:
                 self.scores[self.acting_player_position] += 2
-            elif len(self.players_remain) == 2:
+            elif remain_before == 2:
                 self.scores[self.acting_player_position] += 1
+            # 将当前行动玩家作为出局玩家传递给update_players_list（在结算之后）
+            self.update_players_list(self.acting_player_position)
 
     def get_winner(self):
         return self.winner

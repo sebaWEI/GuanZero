@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(description='GuanZero: PyTorch Guandan AI')
 #general settings
 parser.add_argument('--xpid',default = 'guanzero',
                     help='Experiment id (default:guanzero)')
-parser.add_argument('--save_interval', default=30, type=int,
+parser.add_argument('--save_interval', default=5, type=int,
                     help='Time interval (in minutes) at which to save the model')
 
 #device settings

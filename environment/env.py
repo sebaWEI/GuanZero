@@ -73,6 +73,28 @@ class Env:
         return self._env.get_winning_team()
 
     @property
+    def _game_scores(self):
+        # 根据本局的最终排名为每个玩家分配分数：第1名3分，第2名2分，第3名1分，第4名0分
+        ranks = self._env.players_rank
+        def score_from_rank(rank):
+            if rank == 1:
+                return 3
+            elif rank == 2:
+                return 2
+            elif rank == 3:
+                return 1
+            elif rank == 4:
+                return 0
+            else:
+                return 0
+        return {
+            'player_1': score_from_rank(ranks['player_1']),
+            'player_2': score_from_rank(ranks['player_2']),
+            'player_3': score_from_rank(ranks['player_3']),
+            'player_4': score_from_rank(ranks['player_4']),
+        }
+
+    @property
     def _acting_player_position(self):
         return self._env.acting_player_position
 

@@ -47,7 +47,6 @@ class PassiveAgent:
             print(f"[{self.position}] (保守型AI) 选择动作: {best_action}")
             return best_action
 
-# --- 第二步：编写测试函数 ---
 
 def test_player_finishes_and_game_continues():
     """

@@ -47,20 +47,26 @@ class Environment:
         self.episode_return += reward
         episode_return = self.episode_return 
 
+        final_scores = None
         if done:
+            # 抓取本局分数后再重置
+            if hasattr(self.env, '_game_scores'):
+                final_scores = self.env._game_scores
             obs = self.env.reset()
             self.episode_return = torch.zeros(1, 1)
 
         position, obs, x_no_action, z = _format_observation(obs, self.device)
         reward = torch.tensor(reward).view(1, 1)
         done = torch.tensor(done).view(1, 1)
-        
-        return position, obs, dict(
+        out = dict(
             done=done,
             episode_return=episode_return,
             obs_x_no_action=x_no_action,
             obs_z=z,
-            )
+        )
+        if final_scores is not None:
+            out['final_scores'] = final_scores
+        return position, obs, out
 
     def close(self):
         self.env.close()

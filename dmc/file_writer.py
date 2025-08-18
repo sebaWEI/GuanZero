@@ -62,7 +62,7 @@ class FileWriter:
     def __init__(self,
                  xpid: str = None,
                  xp_args: dict = None,
-                 rootdir: str = '~/palaas'):
+                 rootdir: str = '~/train_results'):
         if not xpid:
             # make unique id
             xpid = '{proc}_{unixtime}'.format(
@@ -81,7 +81,7 @@ class FileWriter:
         self.metadata['xpid'] = self.xpid
 
         formatter = logging.Formatter('%(message)s')
-        self._logger = logging.getLogger('palaas/out')
+        self._logger = logging.getLogger('guanzero/out')
 
         # to stdout handler
         shandle = logging.StreamHandler()

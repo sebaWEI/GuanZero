@@ -92,6 +92,11 @@ def train(flags):
     #initialize learner model
     learner_device = device_iterator[0] if device_iterator else 'cpu'
     learner_model = Model(device = learner_device)
+    # define map_location device for torch.load
+    if learner_device == 'cpu':
+        map_device = torch.device('cpu')
+    else:
+        map_device = torch.device(f'cuda:{learner_device}')
     
     #initialize buffer
     #check create_buffers
@@ -119,20 +124,37 @@ def train(flags):
     
 
     #load model if any
-    if flags.load_model and os.path.exists(checkpointpath):
-        try:
-            checkpoint_states = torch.load(checkpointpath,map_location=learner_device)
-            learner_model.load_state_dict(checkpoint_states['model_state_dict'])
-            optimizer.load_state_dict(checkpoint_states['optimizer_state_dict'])
-            for device_id in device_iterator:
-                actor_models[device_id].load_state_dict(learner_model.state_dict())
-            stats = checkpoint_states['stats']
-            frames = checkpoint_states['frames']
-            log.info('successfully load checkpoint...')
-        
-        except Exception as e:
-            log.error('fail to load checkpoint... ')
-            log.error('Training from scratch')
+    log.info('Checkpoint path: %s (exists=%s)', checkpointpath, os.path.exists(checkpointpath))
+    if flags.load_model:
+        if os.path.exists(checkpointpath):
+            try:
+                checkpoint_states = torch.load(checkpointpath, map_location=map_device, weights_only=False)
+                missing, unexpected = learner_model.load_state_dict(
+                    checkpoint_states['model_state_dict'], strict=False
+                )
+                if missing:
+                    log.warning('Missing keys: %s', missing)
+                if unexpected:
+                    log.warning('Unexpected keys: %s', unexpected)
+                try:
+                    optimizer.load_state_dict(checkpoint_states['optimizer_state_dict'])
+                except Exception as opt_e:
+                    log.warning('Failed to load optimizer state: %s. Re-init optimizer.', opt_e)
+                for device_id in device_iterator:
+                    actor_models[device_id].load_state_dict(learner_model.state_dict())
+                stats = checkpoint_states.get('stats', stats)
+                frames = checkpoint_states.get('frames', frames)
+                log.info('Successfully loaded checkpoint.')
+            except Exception as e:
+                log.error('Failed to load checkpoint from %s: %r', checkpointpath, e)
+                log.error('Training from scratch')
+            except KeyboardInterrupt:
+                log.info('The training was manually interrupted.')
+                checkpoint(frames)
+                return
+        else:
+            log.error('Checkpoint not found at %s. Training from scratch.', checkpointpath)
+
     #starting actor and append it to actor processes
     actor_processes = []
     for device_id in device_iterator:

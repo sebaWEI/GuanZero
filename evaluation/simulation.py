@@ -86,7 +86,7 @@ def evaluate(model_path, eval_data, num_workers):
     player_4_scores = 0
 
     ctx = mp.get_context('spawn')
-    q = ctx.SimpleQueue()
+    q = ctx.Queue()
     processes = []
     for card_play_data in card_play_data_list_each_worker:
         p = ctx.Process(
@@ -120,6 +120,9 @@ def evaluate(model_path, eval_data, num_workers):
         print(f"Warning: Only collected results from {results_collected}/{num_workers} workers")
 
     num_total_wins = num_player_1_wins + num_player_2_wins + num_player_3_wins + num_player_4_wins
+    if num_total_wins == 0:
+        print('Error: No results collected. Please check model loading and worker errors above.')
+        return
     print('WP results:')
     print('player 1 : player 2 : player 3 : player 4 - {:.3f} : {:.3f} : {:.3f} : {:.3f}'.format(
         num_player_1_wins / num_total_wins,

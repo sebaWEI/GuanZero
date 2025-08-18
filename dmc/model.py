@@ -34,6 +34,7 @@ class Model(nn.Module):
         x = self.dense5(x)
         x = torch.relu(x)
         x = self.dense6(x)
+        x = torch.sigmoid(x)
         if return_value:
             return dict(values=x)
         else:
