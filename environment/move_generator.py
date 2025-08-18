@@ -72,7 +72,7 @@ class MovesGenerator(object):
     def gen_type_2_pair(self):
         self.pair_moves = []
         for k, v in self.cards_dict.items():
-            if len(v) >= 2 :
+            if len(v) >= 2:
                 self.pair_moves += list_combinations(v, 2)
             if self.wild_card_of_game in self.cards_list:
                 for k1, v1 in self.cards_dict.items():
@@ -80,7 +80,7 @@ class MovesGenerator(object):
                         list_of_same_rank = list(set(v1))
                         for i1 in range(len(list_of_same_rank)):
                             self.pair_moves.append([list_of_same_rank[i1], self.wild_card_of_game])
-        self.pair_moves = make_it_unique(self.pair_moves)  
+        self.pair_moves = make_it_unique(self.pair_moves)
         return self.pair_moves
 
     def _cards_with_same_rank_with_wild_card(self, number_of_cards: int):
@@ -109,7 +109,7 @@ class MovesGenerator(object):
                     if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
                         list_of_combination = list_combinations(v1, number_of_cards - 1)
                         for item in list_of_combination:
-                            moves.append(item + [self.wild_card_of_game])#could be simpilfied
+                            moves.append(item + [self.wild_card_of_game])  # could be simpilfied
             if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
                 for k1, v1 in self.cards_dict.items():
                     if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
@@ -274,7 +274,8 @@ class MovesGenerator(object):
         components_dict[1] = components_dict[14]
         existing_series_start = []
         for i in range(1, 16 - sequence_length):
-            if all(k in components_dict.keys() for k in [i + k for k in range(0, sequence_length)]):
+            # 修改这里：检查每个键是否有非空的值列表，而不是仅检查键是否存在
+            if all(len(components_dict[i + k]) > 0 for k in range(0, sequence_length)):
                 existing_series_start.append(i)
         for i in existing_series_start:
             ranks = [i + offset for offset in range(0, sequence_length)]
@@ -286,6 +287,8 @@ class MovesGenerator(object):
                                   combination.count(self.wild_card_of_game) <= self.number_of_wild_cards]
             moves += legal_combinations
 
+        moves = [m for m in moves
+                 if all(m.count(card) <= self.cards_list.count(card) for card in set(m))]
         moves = make_it_unique(moves)
         return moves
 
