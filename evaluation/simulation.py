@@ -7,9 +7,11 @@ from environment.game import GameEnv
 def load_card_play_models(model_path):
     players = {}
 
-    for position in ['player_1', 'player_2', 'player_3', 'player_4']:
-        from .agent import GuanZeroAgent
-        players[position] = GuanZeroAgent(model_path)
+    for position in ['player_1', 'player_2', 'player_3']:
+        from .random_agent import RandomAgent
+        players[position] = RandomAgent
+    from .agent import GuanZeroAgent
+    players['player_4'] = GuanZeroAgent(model_path)
     return players
 
 
