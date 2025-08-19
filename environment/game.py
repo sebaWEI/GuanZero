@@ -79,13 +79,10 @@ class GameEnv(object):
         self.game_info_set = self.get_info_set()
 
     def game_done(self):
-        # 检查当前行动玩家是否出完牌
         if len(self.info_sets[self.acting_player_position].player_hand_cards) == 0:
-            # 记录出牌前的剩余玩家数量，用于正确结算分数与首胜判断
             remain_before = len(self.players_remain)
             self.player_follows = self.players_remain[
                 (self.players_remain.index(self.acting_player_position) + 1) % len(self.players_remain)]
-            # 根据出局前的剩余玩家数量更新分数
             if remain_before == 4:
                 self.winner = self.acting_player_position
                 self.num_wins[self.acting_player_position] += 1
@@ -94,7 +91,6 @@ class GameEnv(object):
                 self.scores[self.acting_player_position] += 2
             elif remain_before == 2:
                 self.scores[self.acting_player_position] += 1
-            # 将当前行动玩家作为出局玩家传递给update_players_list（在结算之后）
             self.update_players_list(self.acting_player_position)
 
     def get_winner(self):
@@ -164,17 +160,12 @@ class GameEnv(object):
         return None
 
     def update_players_list(self, player_out=None):
-        """更新玩家列表并获取新的行动位置。
-        主要功能：传递回合，记录玩家排名。
-        """
         if player_out is None:
-            # 原有的计算逻辑，用于向后兼容
             player_out = self.players_remain[
                 (self.players_remain.index(self.acting_player_position) - 1 + len(self.players_remain)) % len(
                     self.players_remain)]
         teammate = get_team_mate(player_out)
 
-        # 记录玩家排名
         if len(self.players_remain) == 4:
             self.players_rank[player_out] = 1
         elif len(self.players_remain) == 3:
