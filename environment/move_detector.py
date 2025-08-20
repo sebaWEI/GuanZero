@@ -181,32 +181,48 @@ def get_move_info(move, wild_card_of_game=1):
                 return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': sorted_rank_without_wild_card[0]}  # 222333
 
         if number_of_wild_cards == 1:
-            # 首先检查number2rank是否有足够的键值对
-            if sorted(rank2number.values()) == [1, 2, 2] and len(number2rank) >= 2:
-                # 然后再安全地访问索引
-                sorted_values = sorted(number2rank.values())
-                if len(sorted_values) >= 2 and len(sorted_values[0]) > 0 and len(sorted_values[1]) >= 2:
-                    if sorted_values[0][0] + 2 == sorted_values[1][0] + 1 == sorted_values[1][1] \
-                            and sorted_values[1][1] <= 14:
-                        return {'type': TYPE_6_SERIAL_PAIR, 'rank': sorted_rank_without_wild_card[0]}  # 22334x
+            counts_sorted = sorted(rank2number.values())
+            singles = sorted(number2rank.get(1, []))
+            pairs = sorted(number2rank.get(2, []))
+            triples = sorted(number2rank.get(3, []))
+
+            # [1,2,2]: two pairs and one single that are consecutive -> 22334x
+            if counts_sorted == [1, 2, 2] and len(singles) == 1 and len(pairs) == 2:
+                seq = sorted([singles[0], pairs[0], pairs[1]])
+                if seq[0] + 1 == seq[1] and seq[1] + 1 == seq[2] and seq[2] <= 14:
+                    return {'type': TYPE_6_SERIAL_PAIR, 'rank': seq[0]}  # 22334x
+
+            # [2,3]: one pair and one triple that are consecutive -> 22233x
+            if counts_sorted == [2, 3] and len(pairs) == 1 and len(triples) == 1:
+                lo, hi = min(pairs[0], triples[0]), max(pairs[0], triples[0])
+                if lo + 1 == hi and hi <= 14:
+                    return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': lo}  # 22233x
         if number_of_wild_cards == 2:
-            if sorted(rank2number.values()) == [1, 1, 2] and sorted(number2rank.values())[0][0] + 2 == \
-                    sorted(number2rank.values())[0][1] + 1 == sorted(number2rank.values())[1][0] \
-                    and sorted(number2rank.values())[1][0] <= 14:
-                return {'type': TYPE_6_SERIAL_PAIR, 'rank': sorted_rank_without_wild_card[0]}  # 2x3x44
-            if sorted(rank2number.values()) == [1, 3] and sorted(number2rank.values())[0][0] + 1 == \
-                    sorted(number2rank.values())[1][0] \
-                    and sorted(number2rank.values())[1][0] <= 14:
-                return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': sorted_rank_without_wild_card[0]}  # 2223xx
-            if sorted(rank2number.values()) == [2, 2] and sorted(number2rank.values())[0][0] + 1 == \
-                    sorted(number2rank.values())[0][1] \
-                    and sorted(number2rank.values())[0][1] <= 14:
-                return {'type': [TYPE_6_SERIAL_PAIR, TYPE_7_SERIAL_TRIPLE],
-                        'rank': sorted_rank_without_wild_card[0]}  # 2233xx and 22x33x
-            if sorted(rank2number.values()) == [2, 2] and sorted(number2rank.values())[0][0] + 2 == \
-                    sorted(number2rank.values())[0][1] \
-                    and sorted(number2rank.values())[0][1] <= 14:
-                return {'type': TYPE_6_SERIAL_PAIR, 'rank': sorted_rank_without_wild_card[0]}  # 22xx44
+            counts_sorted = sorted(rank2number.values())
+            singles = sorted(number2rank.get(1, []))
+            pairs = sorted(number2rank.get(2, []))
+            triples = sorted(number2rank.get(3, []))
+
+            # [1, 1, 2]: two singles and one pair → three consecutive ranks in any order
+            if counts_sorted == [1, 1, 2] and len(singles) == 2 and len(pairs) == 1:
+                seq = sorted([singles[0], singles[1], pairs[0]])
+                if seq[0] + 1 == seq[1] and seq[1] + 1 == seq[2] and seq[2] <= 14:
+                    return {'type': TYPE_6_SERIAL_PAIR, 'rank': seq[0]}  # 55,66,77
+
+            # [1, 3]: one single and one triple → adjacent ranks (either order)
+            if counts_sorted == [1, 3] and len(singles) == 1 and len(triples) == 1:
+                a, b = singles[0], triples[0]
+                if abs(a - b) == 1 and max(a, b) <= 14:
+                    return {'type': TYPE_7_SERIAL_TRIPLE, 'rank': min(a, b)}  # 22233x
+
+            # [2, 2]: two pairs
+            if counts_sorted == [2, 2] and len(pairs) == 2:
+                p0, p1 = pairs[0], pairs[1]
+                if p0 + 1 == p1 and p1 <= 14:
+                    return {'type': [TYPE_6_SERIAL_PAIR, TYPE_7_SERIAL_TRIPLE],
+                            'rank': sorted_rank_without_wild_card[0]}  # 2233xx and 22x33x
+                if p0 + 2 == p1 and p1 <= 14:
+                    return {'type': TYPE_6_SERIAL_PAIR, 'rank': sorted_rank_without_wild_card[0]}  # 22xx44
 
         else:
             return {'type': TYPE_15_WRONG, 'rank': None}

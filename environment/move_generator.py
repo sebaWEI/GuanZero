@@ -269,8 +269,11 @@ class MovesGenerator(object):
         sorted_components = sorted(components, key=lambda x: (EnvCard2Rank[x[0]], x[0]))
         components_dict = collections.defaultdict(list)
         for i in sorted_components:
-            if 14 >= EnvCard2Rank[i[0]] >= 2:
-                components_dict[EnvCard2Rank[i[0]]].append(i)
+            if all(card == self.wild_card_of_game for card in i):
+                for rank in range(1, 15):
+                    components_dict[rank].append(i)
+            elif 14 >= EnvCard2Rank[[card for card in i if card != self.wild_card_of_game][0]] >= 2:
+                components_dict[EnvCard2Rank[[card for card in i if card != self.wild_card_of_game][0]]].append(i)
         components_dict[1] = components_dict[14]
         existing_series_start = []
         for i in range(1, 16 - sequence_length):
@@ -289,25 +292,7 @@ class MovesGenerator(object):
         moves = [m for m in moves
                  if all(m.count(card) <= self.cards_list.count(card) for card in set(m))]
         moves = make_it_unique(moves)
-        final_moves = []
-        for move in moves:
-            move_without_wildcard = [card for card in move if card != self.wild_card_of_game]
-            rank_dict = collections.defaultdict(list)
-            for i in move_without_wildcard:
-                rank_dict[EnvCard2Rank[i]].append(i)
-            if sequence_length == 3:
-                if len(rank_dict.keys()) == 3:
-                    if sorted(rank_dict.keys())[0] + 1 == sorted(rank_dict.keys())[1] and \
-                            sorted(rank_dict.keys())[1] + 1 == sorted(rank_dict.keys())[2]:
-                        final_moves.append(move)
-                if len(rank_dict.keys()) == 2:
-                    if sorted(rank_dict.keys())[0] + 1 == sorted(rank_dict.keys())[1]:
-                        final_moves.append(move)
-            if sequence_length == 2:
-                if len(rank_dict.keys()) == 2:
-                    if sorted(rank_dict.keys())[0] + 1 == sorted(rank_dict.keys())[1]:
-                        final_moves.append(move)
-        return final_moves
+        return moves
 
     def gen_moves(self):
         moves = []
