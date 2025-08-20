@@ -104,18 +104,18 @@ class MovesGenerator(object):
         for k, v in self.cards_dict.items():
             if len(v) >= number_of_cards:  # combinations without wildcard
                 moves += list_combinations(v, number_of_cards)
-            if self.wild_card_of_game in self.cards_list:  # with one wildcard
-                for k1, v1 in self.cards_dict.items():
-                    if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
-                        list_of_combination = list_combinations(v1, number_of_cards - 1)
-                        for item in list_of_combination:
-                            moves.append(item + [self.wild_card_of_game])  # could be simpilfied
-            if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
-                for k1, v1 in self.cards_dict.items():
-                    if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
-                        list_of_combination = list_combinations(v1, number_of_cards - 2)
-                        for item in list_of_combination:
-                            moves.append(item + [self.wild_card_of_game] + [self.wild_card_of_game])
+        if self.wild_card_of_game in self.cards_list:  # with one wildcard
+            for k1, v1 in self.cards_dict.items():
+                if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
+                    list_of_combination = list_combinations(v1, number_of_cards - 1)
+                    for item in list_of_combination:
+                        moves.append(item + [self.wild_card_of_game])  # could be simplified
+        if self.cards_list.count(self.wild_card_of_game) == 2:  # with 2 wildcards
+            for k1, v1 in self.cards_dict.items():
+                if k1 != EnvCard2Rank[self.wild_card_of_game] and k1 != 15 and k1 != 16:
+                    list_of_combination = list_combinations(v1, number_of_cards - 2)
+                    for item in list_of_combination:
+                        moves.append(item + [self.wild_card_of_game] + [self.wild_card_of_game])
             moves = make_it_unique(moves)  # make all moves unique
         return moves
 
