@@ -304,8 +304,9 @@ class MovesGenerator(object):
                     if sorted(rank_dict.keys())[0] + 1 == sorted(rank_dict.keys())[1]:
                         final_moves.append(move)
             if sequence_length == 2:
-                if sorted(rank_dict.keys())[0] + 1 == sorted(rank_dict.keys())[1]:
-                    final_moves.append(move)
+                if len(rank_dict.keys()) == 2:
+                    if sorted(rank_dict.keys())[0] + 1 == sorted(rank_dict.keys())[1]:
+                        final_moves.append(move)
         return final_moves
 
     def gen_moves(self):
