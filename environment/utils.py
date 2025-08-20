@@ -20,6 +20,25 @@ TYPE_13_BOMB_8 = 13
 TYPE_14_JOKER_BOMB = 14
 TYPE_15_WRONG = 15
 
+Typenum2RealType = {
+    0: 'pass',
+    1: 'single',
+    2: 'pair',
+    3: 'triple',
+    4: '3 + 2',
+    5: 'straight',
+    6: 'serial pair',
+    7: 'serial triple',
+    8: '4 * bomb',
+    9: '5 * bomb',
+    10: 'straight flush',
+    11: '6 * bomb',
+    12: '7 * bomb',
+    13: '8 * bomb',
+    14: 'joker bomb',
+    15: 'type error'
+}
+
 
 # return all possible results of selecting num cards from cards list
 def list_combinations(cards, num):

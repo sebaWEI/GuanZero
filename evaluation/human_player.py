@@ -1,5 +1,5 @@
 from environment.move_detector import get_move_info
-from environment.utils import EnvCard2RealCard
+from environment.utils import EnvCard2RealCard, Typenum2RealType
 
 
 class HumanPlayer:
@@ -14,7 +14,15 @@ class HumanPlayer:
 
         print("\navailable actions：")
         for i, action in enumerate(valid_actions):
-            print(f"{i}: {[EnvCard2RealCard[k] for k in action]}")
+            if action == []:
+                print(f"{i}: pass")
+            else:
+                type = Typenum2RealType[get_move_info(action)['type']]
+                print_action = ''
+                for card in [EnvCard2RealCard[k] for k in action]:
+                    print_action += (card + ', ')
+                print_action = print_action[:-2]
+                print(f"{i}: {type}     {print_action}")
 
         while True:
             try:
@@ -29,16 +37,25 @@ class HumanPlayer:
         print("\n" + "=" * 50)
         print("game state now：")
         print(f"your position: {info_set.player_position}")
-        print(f'players remain: {info_set.players_remain}')
+        players_remain = ''
+        for player in info_set.players_remain:
+            players_remain += (player + ', ')
+        players_remain = players_remain[:-2]
+        print(f'players remain: {players_remain}')
         for i in range(-5, 0):
             try:
                 if info_set.players_seq[i]:
                     print("=" * 50)
                     print(f'player: {info_set.players_seq[i]}')
-                    print(f'action: {[EnvCard2RealCard[k] for k in info_set.card_play_action_seq[i]]}')
-                    print(f"type: {get_move_info(info_set.card_play_action_seq[i])['type']}")
-                    print("=" * 50)
-
+                    if info_set.card_play_action_seq[i] == []:
+                        print('pass')
+                    else:
+                        action = ''
+                        for card in [EnvCard2RealCard[k] for k in info_set.card_play_action_seq[i]]:
+                            action += (card + ', ')
+                        action = action[:-2]
+                        print(f'action: {action}')
+                        print(f"type: {Typenum2RealType[get_move_info(info_set.card_play_action_seq[i])['type']]}")
             except:
                 pass
 
