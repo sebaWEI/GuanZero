@@ -18,6 +18,7 @@ class GameEnv(object):
     def __init__(self, players):
         self.card_play_action_seq = []
         self.card_play_type_seq = []
+        self.players_seq = []
         self.players_remain = ['player_1', 'player_2', 'player_3', 'player_4']
 
         self.game_over = False
@@ -79,13 +80,10 @@ class GameEnv(object):
         self.game_info_set = self.get_info_set()
 
     def game_done(self):
-        # 检查当前行动玩家是否出完牌
         if len(self.info_sets[self.acting_player_position].player_hand_cards) == 0:
-            # 记录出牌前的剩余玩家数量，用于正确结算分数与首胜判断
             remain_before = len(self.players_remain)
             self.player_follows = self.players_remain[
                 (self.players_remain.index(self.acting_player_position) + 1) % len(self.players_remain)]
-            # 根据出局前的剩余玩家数量更新分数
             if remain_before == 4:
                 self.winner = self.acting_player_position
                 self.num_wins[self.acting_player_position] += 1
@@ -94,7 +92,6 @@ class GameEnv(object):
                 self.scores[self.acting_player_position] += 2
             elif remain_before == 2:
                 self.scores[self.acting_player_position] += 1
-            # 将当前行动玩家作为出局玩家传递给update_players_list（在结算之后）
             self.update_players_list(self.acting_player_position)
 
     def get_winner(self):
@@ -164,17 +161,12 @@ class GameEnv(object):
         return None
 
     def update_players_list(self, player_out=None):
-        """更新玩家列表并获取新的行动位置。
-        主要功能：传递回合，记录玩家排名。
-        """
         if player_out is None:
-            # 原有的计算逻辑，用于向后兼容
             player_out = self.players_remain[
                 (self.players_remain.index(self.acting_player_position) - 1 + len(self.players_remain)) % len(
                     self.players_remain)]
         teammate = get_team_mate(player_out)
 
-        # 记录玩家排名
         if len(self.players_remain) == 4:
             self.players_rank[player_out] = 1
         elif len(self.players_remain) == 3:
@@ -186,6 +178,9 @@ class GameEnv(object):
 
         # Remove player from remaining list
         self.players_remain.remove(player_out)
+
+        for player in self.players_remain:
+            self.info_sets[player].players_remain = self.players_remain
 
         if len(self.players_remain) == 3:
             self.pending_free_type_check = True
@@ -374,6 +369,7 @@ class GameEnv(object):
 
         self.card_play_action_seq.append(action)
         self.card_play_type_seq.append(action_type)
+        self.players_seq.append(self.acting_player_position)
 
         self.update_acting_player_hand_cards(action)
 
@@ -396,6 +392,8 @@ class GameEnv(object):
 
     def get_info_set(self):
         self.info_sets[self.acting_player_position].last_pid = self.last_pid
+
+        self.info_sets[self.acting_player_position].players_remain = self.players_remain
 
         self.info_sets[
             self.acting_player_position].legal_actions = \
@@ -427,6 +425,7 @@ class GameEnv(object):
             self.card_play_action_seq
         self.info_sets[self.acting_player_position].card_play_type_seq = \
             self.card_play_type_seq
+        self.info_sets[self.acting_player_position].players_seq = self.players_seq
 
         self.info_sets[
             self.acting_player_position].all_hand_cards = \
@@ -438,6 +437,7 @@ class GameEnv(object):
     def reset(self):
         self.card_play_action_seq = []
         self.card_play_type_seq = []
+        self.players_seq = []
         self.players_remain = ['player_1', 'player_2', 'player_3', 'player_4']
 
         self.game_over = False
@@ -480,11 +480,13 @@ class InfoSet(object):
     def __init__(self, player_position):
         # The player position, i.e., player_1, player_2, player_3, player_4
         self.player_position = player_position
+        self.players_remain = []
         # The hand cards of the current player. A list.
         self.player_hand_cards = None
         # The historical moves. It is a list of list
         self.card_play_action_seq = None
         self.card_play_type_seq = None
+        self.players_seq = None
         # The union of the hand cards of the other 3 players for the current player
         self.other_hand_cards = None
         # The legal actions for the current move. It is a list of list

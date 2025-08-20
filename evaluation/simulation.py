@@ -1,16 +1,89 @@
 import multiprocessing as mp
 import pickle
+import numpy as np
 
 from environment.game import GameEnv
 
+from random_agent import RandomAgent
+from agent import GuanZeroAgent
+from human_player import HumanPlayer
 
-def load_card_play_models(model_path):
+deck = []
+for i in range(0, 54):
+    deck.extend([i for _ in range(2)])
+
+
+def load_card_play_models():
     players = {}
 
-    for position in ['player_1', 'player_2', 'player_3', 'player_4']:
-        from .agent import GuanZeroAgent
-        players[position] = GuanZeroAgent(model_path)
+    for position in ['player_1', 'player_2', 'player_3']:
+        from random_agent import RandomAgent
+        players[position] = RandomAgent
+    from human_player import HumanPlayer
+    players['player_4'] = HumanPlayer
     return players
+
+
+def create_game_with_players(model_path, player_config=None):
+    """
+    Args:
+        model_path: the path of pretrained model
+
+        player_config: Dict[str, str]：
+            {
+                'player_1': 'human',
+                'player_2': 'ai',
+                'player_3': 'random',
+                'player_4': 'ai'
+            }
+    """
+    if player_config is None:
+        player_config = {
+            'player_1': 'human',
+            'player_2': 'random',
+            'player_3': 'random',
+            'player_4': 'random'
+        }
+
+    players = {}
+    for position in ['player_1', 'player_2', 'player_3', 'player_4']:
+        player_type = player_config.get(position, 'random')
+        if player_type == 'human':
+            players[position] = HumanPlayer()
+        elif player_type == 'ai':
+            if not model_path:
+                raise ValueError(f"AI player {position} requires model_path")
+            players[position] = GuanZeroAgent(model_path)
+        else:  # 'random' or default
+            players[position] = RandomAgent()
+
+    return GameEnv(players)
+
+
+def play_single_game(player_config=None):
+    env = create_game_with_players(player_config)
+
+    _deck = deck.copy()
+    np.random.shuffle(_deck)
+    player_hand_dict = {
+        'player_1': _deck[:27],
+        'player_2': _deck[27:54],
+        'player_3': _deck[54:81],
+        'player_4': _deck[81:108]
+    }
+
+    for player in player_hand_dict:
+        player_hand_dict[player].sort()
+
+    env.card_play_init(player_hand_dict)
+
+    while not env.game_over:
+        env.step()
+
+    return {
+        'wins': env.num_wins,
+        'scores': env.scores
+    }
 
 
 def mp_simulate(card_play_data_list, model_path, q):
@@ -135,3 +208,20 @@ def evaluate(model_path, eval_data, num_workers):
         player_2_scores / num_total_wins,
         player_3_scores / num_total_wins,
         player_4_scores / num_total_wins))
+
+
+if __name__ == "__main__":
+    config = {
+        'player_1': 'human',
+        'player_2': 'random',
+        'player_3': 'random',
+        'player_4': 'random'
+    }
+
+    try:
+        result = play_single_game(config)
+        print("\ngame over!")
+        print("wins:", result['wins'])
+        print("scores:", result['scores'])
+    except Exception as e:
+        print(f"errors during game: {e}")

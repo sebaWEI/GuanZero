@@ -274,7 +274,6 @@ class MovesGenerator(object):
         components_dict[1] = components_dict[14]
         existing_series_start = []
         for i in range(1, 16 - sequence_length):
-            # 修改这里：检查每个键是否有非空的值列表，而不是仅检查键是否存在
             if all(len(components_dict[i + k]) > 0 for k in range(0, sequence_length)):
                 existing_series_start.append(i)
         for i in existing_series_start:

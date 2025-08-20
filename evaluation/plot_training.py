@@ -92,15 +92,6 @@ def main():
 	rows = read_logs(logs_path, fieldnames)
 
 	x_key = 'frames' if args.use_frames and 'frames' in fieldnames else '_tick'
-	# Sort rows by x_key to avoid backwards lines when logs were appended across restarts
-	def _key_fn(r):
-		v = r.get(x_key)
-		try:
-			return float(v)
-		except Exception:
-			return float('inf')
-	rows.sort(key=_key_fn)
-
 	x = to_float_list(rows, x_key)
 	loss = to_float_list(rows, 'loss') if 'loss' in fieldnames else []
 	mer = to_float_list(rows, 'mean_episode_return') if 'mean_episode_return' in fieldnames else []
