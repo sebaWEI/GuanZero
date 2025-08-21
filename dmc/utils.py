@@ -7,7 +7,6 @@ from collections import Counter
 import time
 
 import torch
-from torch import multiprocessing as mp
 
 from .env_utils import Environment
 from environment.env import Env
@@ -40,14 +39,14 @@ def create_buffers(flags, device_iterator):
     buffers = {}
     for device in device_iterator:
         buffers[device] = {}
-        x_dim =  436
+        x_dim = 436
         specs = dict(
             done=dict(size=(T,), dtype=torch.bool),
             episode_return=dict(size=(T,), dtype=torch.float32),
             target=dict(size=(T,), dtype=torch.float32),
             obs_x_no_action=dict(size=(T, x_dim), dtype=torch.int8),
             obs_action=dict(size=(T, 54), dtype=torch.int8),
-            obs_z=dict(size=(T,5,162), dtype=torch.int8),
+            obs_z=dict(size=(T, 5, 162), dtype=torch.int8),
         )
         _buffers: Buffers = {key: [] for key in specs}
         for _ in range(flags.num_buffers):
@@ -129,7 +128,6 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
                     scores = env_output.get('final_scores', env.env._game_scores)
                     # 归一化到 [0,1] 区间，稳定训练
                     new_targets = [float(scores[pos]) / 3.0 for pos in player_position_buf]
-
 
                     target_buf.extend(new_targets)
                     diff = len(new_targets)
