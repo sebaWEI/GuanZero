@@ -4,9 +4,9 @@ import numpy as np
 
 from environment.game import GameEnv
 
-from random_agent import RandomAgent
-from agent import GuanZeroAgent
-from human_player import HumanPlayer
+from .random_agent import RandomAgent
+from .agent import GuanZeroAgent
+from .human_player import HumanPlayer
 
 deck = []
 for i in range(0, 54):
@@ -60,8 +60,8 @@ def create_game_with_players(model_path, player_config=None):
     return GameEnv(players)
 
 
-def play_single_game(player_config=None):
-    env = create_game_with_players(player_config)
+def play_single_game(model_path=None,player_config=None):
+    env = create_game_with_players(model_path,player_config)
 
     _deck = deck.copy()
     np.random.shuffle(_deck)
@@ -86,10 +86,8 @@ def play_single_game(player_config=None):
     }
 
 
-def mp_simulate(card_play_data_list, model_path, q):
-    players = load_card_play_models(model_path)
-
-    env = GameEnv(players)
+def mp_simulate(card_play_data_list, model_path, q,player_config):
+    env = create_game_with_players(model_path,player_config)
     for idx, card_play_data in enumerate(card_play_data_list):
         env.card_play_init(card_play_data)
         while not env.game_over:
@@ -123,7 +121,7 @@ def data_allocation_per_worker(card_play_data_list, num_workers):
     return card_play_data_list_each_worker
 
 
-def evaluate(model_path, eval_data, num_workers):
+def evaluate(model_path, eval_data, num_workers,player_config):
     # Input validation
     if num_workers <= 0:
         raise ValueError("num_workers must be positive")
@@ -164,7 +162,7 @@ def evaluate(model_path, eval_data, num_workers):
     for card_play_data in card_play_data_list_each_worker:
         p = ctx.Process(
             target=mp_simulate,
-            args=(card_play_data, model_path, q))
+            args=(card_play_data, model_path, q,player_config))
         p.start()
         processes.append(p)
 

@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(description='GuanZero: PyTorch Guandan AI')
 #general settings
 parser.add_argument('--xpid',default = 'guanzero',
                     help='Experiment id (default:guanzero)')
-parser.add_argument('--save_interval', default=5, type=int,
+parser.add_argument('--save_interval', default=10, type=int,
                     help='Time interval (in minutes) at which to save the model')
 
 #device settings
@@ -27,7 +27,7 @@ parser.add_argument('--savedir',default='guanzero_checkpoints',
                     help='The root directory for saving all experimental data(default:)')
 
 #hyperparameters
-parser.add_argument('--total_frames', default=100000000000, type=int,
+parser.add_argument('--total_frames', default=1000000000000, type=int,
                     help='Total environment frames to train for')
 parser.add_argument('--exp_epsilon', default=0.01, type=float,
                     help='The probability for exploration')
