@@ -67,7 +67,9 @@ class MovesGenerator(object):
         self.single_card_moves = []
         for i in set(self.cards_list):
             self.single_card_moves.append([i])
-        return self.single_card_moves
+        moves = self.check_count(self.single_card_moves)
+        moves = make_it_unique(moves)
+        return moves
 
     def gen_type_2_pair(self):
         self.pair_moves = []
@@ -80,8 +82,9 @@ class MovesGenerator(object):
                         list_of_same_rank = list(set(v1))
                         for i1 in range(len(list_of_same_rank)):
                             self.pair_moves.append([list_of_same_rank[i1], self.wild_card_of_game])
-        self.pair_moves = make_it_unique(self.pair_moves)
-        return self.pair_moves
+        moves = self.check_count(self.pair_moves)
+        moves = make_it_unique(moves)
+        return moves
 
     def _cards_with_same_rank_with_wild_card(self, number_of_cards: int):
         """
@@ -117,6 +120,8 @@ class MovesGenerator(object):
                     for item in list_of_combination:
                         moves.append(item + [self.wild_card_of_game] + [self.wild_card_of_game])
             moves = make_it_unique(moves)  # make all moves unique
+        moves = self.check_count(moves)
+        moves = make_it_unique(moves)
         return moves
 
     def gen_type_3_triple(self):
@@ -148,7 +153,9 @@ class MovesGenerator(object):
         if (52 in self.cards_list and 53 in self.cards_list and
                 self.cards_list.count(52) == 2 and self.cards_list.count(53) == 2):
             self.joker_bomb_moves.append([52, 52, 53, 53])
-        return self.joker_bomb_moves
+        moves = self.check_count(self.joker_bomb_moves)
+        moves = make_it_unique(moves)
+        return moves
 
     def straight_continuity_check(self):
 
@@ -221,7 +228,9 @@ class MovesGenerator(object):
             self.straight_moves += combinations_of_one_straight
         self.straight_moves = list(set(self.straight_moves))
         self.straight_moves = [list(straight_move) for straight_move in self.straight_moves]
-        return self.straight_moves
+        moves = self.check_count(self.straight_moves)
+        moves = make_it_unique(moves)
+        return moves
 
     def gen_type_10_straight_flush(self):
         self.straight_flush_moves = []
@@ -236,7 +245,9 @@ class MovesGenerator(object):
             is_straight_flush = len(set(suit_list)) == 1
             if is_straight_flush:
                 self.straight_flush_moves.append(straight)
-        return self.straight_flush_moves
+        moves = self.check_count(self.straight_flush_moves)
+        moves = make_it_unique(moves)
+        return moves
 
     def gen_type_4_3_2(self):
         self._3_2_moves = []
@@ -250,6 +261,8 @@ class MovesGenerator(object):
                               combination.count(self.wild_card_of_game) <= self.number_of_wild_cards]
         self._3_2_moves = [list(combination) for combination in
                            list(set([tuple(combination) for combination in legal_combinations]))]
+        self._3_2_moves = self.check_count(self._3_2_moves)
+        self._3_2_moves = make_it_unique(self._3_2_moves)
         return self._3_2_moves
 
     def gen_type_6_serial_pair(self):
@@ -289,9 +302,12 @@ class MovesGenerator(object):
                                   combination.count(self.wild_card_of_game) <= self.number_of_wild_cards]
             moves += legal_combinations
 
-        moves = [m for m in moves
-                 if all(m.count(card) <= self.cards_list.count(card) for card in set(m))]
+        moves = self.check_count(moves)
         moves = make_it_unique(moves)
+        return moves
+
+    def check_count(self, moves):
+        moves = [m for m in moves if all(m.count(card) <= self.cards_list.count(card) for card in set(m))]
         return moves
 
     def gen_moves(self):
