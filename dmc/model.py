@@ -8,7 +8,7 @@ class Model(nn.Module):
     def __init__(self, device=0):
         super().__init__()
         self.lstm = nn.LSTM(162, 128, batch_first=True)
-        self.dense1 = nn.Linear(490 + 128, 512)  #x_batch:(legal_actions,490)
+        self.dense1 = nn.Linear(622, 512)  #x_batch:(legal_actions,490)
         self.dense2 = nn.Linear(512, 512)
         self.dense3 = nn.Linear(512, 512)
         self.dense4 = nn.Linear(512, 512)
