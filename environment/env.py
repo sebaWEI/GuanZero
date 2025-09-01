@@ -248,6 +248,7 @@ def get_obs_from_player(info_set):
                          teammate_num_cards_left_batch,
                          my_action_batch))
     x_no_action = np.hstack((position_matrix,
+                             players_remain,
                              my_hand_cards,
                              other_hand_cards,
                              my_played_cards,
