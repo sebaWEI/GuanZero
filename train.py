@@ -1,6 +1,6 @@
 import os
 
-from dmc.dmc import  train
+from dmc.dmc import train
 from dmc.arguments import parser
 
 if __name__ == '__main__':

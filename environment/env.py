@@ -168,6 +168,19 @@ def action_seq_list2array(action_seq_list):
     return action_seq_array
 
 
+def players_remain_to_array(players_remain):
+    players_remain_array = [0, 0, 0, 0]
+    if 'player_1' in players_remain:
+        players_remain_array[0] = 1
+    if 'player_2' in players_remain:
+        players_remain_array[1] = 1
+    if 'player_3' in players_remain:
+        players_remain_array[2] = 1
+    if 'player_4' in players_remain:
+        players_remain_array[3] = 1
+    return players_remain_array
+
+
 def get_obs_from_player(info_set):
     num_legal_actions = len(info_set.legal_actions)
     player = info_set.player_position
@@ -185,6 +198,10 @@ def get_obs_from_player(info_set):
         teammate = 'player_2'
 
     position_matrix_batch = np.repeat(np.array(position_matrix)[np.newaxis, :], num_legal_actions, axis=0)
+
+    players_remain = players_remain_to_array(info_set.players_remain)
+    players_remain_batch = np.repeat(np.array(players_remain)[np.newaxis, :], num_legal_actions, axis=0)
+
     my_hand_cards = cards2array(info_set.player_hand_cards)
     my_hand_cards_batch = np.repeat(my_hand_cards[np.newaxis, :], num_legal_actions, axis=0)
 
@@ -219,6 +236,7 @@ def get_obs_from_player(info_set):
     teammate_played_cards_batch = np.repeat(teammate_played_cards[np.newaxis, :], num_legal_actions, axis=0)
 
     x_batch = np.hstack((position_matrix_batch,
+                         players_remain_batch,
                          my_hand_cards_batch,
                          other_hand_cards_batch,
                          my_played_cards_batch,
@@ -230,6 +248,7 @@ def get_obs_from_player(info_set):
                          teammate_num_cards_left_batch,
                          my_action_batch))
     x_no_action = np.hstack((position_matrix,
+                             players_remain,
                              my_hand_cards,
                              other_hand_cards,
                              my_played_cards,
