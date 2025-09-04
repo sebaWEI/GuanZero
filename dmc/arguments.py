@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(description='GuanZero: PyTorch Guandan AI')
 #general settings
 parser.add_argument('--xpid',default = 'guanzero',
                     help='Experiment id (default:guanzero)')
-parser.add_argument('--save_interval', default=10, type=int,
+parser.add_argument('--save_interval', default=30, type=int,
                     help='Time interval (in minutes) at which to save the model')
 
 #device settings
@@ -39,6 +39,8 @@ parser.add_argument('--num_buffers', default=50, type=int,
                     help='Number of shared-memory buffers')
 parser.add_argument('--max_grad_norm', default=40., type=float,
                     help='Max norm of gradients')
+parser.add_argument('--num_threads', default=4, type=int,
+                    help='Number of threads for data loading')
 
 #optimizer settings
 parser.add_argument('--learning_rate', default=0.0001, type=float,

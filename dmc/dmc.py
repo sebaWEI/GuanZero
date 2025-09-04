@@ -95,7 +95,7 @@ def train(flags):
         actor_models[device_id] = actor_model
 
     # initialize learner model
-    learner_device = device_iterator[0] if device_iterator else 'cpu'
+    learner_device = flags.training_device
     learner_model = Model(device=learner_device)
     # define map_location device for torch.load
     if learner_device == 'cpu':
@@ -202,19 +202,20 @@ def train(flags):
     # 启动learner线程
     for device_id in device_iterator:
         # only one learner
-        learner_id = 0
-        thread = threading.Thread(
-            target=batch_and_learn,
-            args=(
-                learner_id,
-                device_id,
-                data_locks[device_id],
-                learner_model_lock,
-                stats_lock
+        for learner_id in range(flags.num_threads):
+            thread = threading.Thread(
+                target=batch_and_learn,
+                name=f'BatchAndLearn-{learner_id}',
+                args=(
+                    learner_id,
+                    device_id,
+                    data_locks[device_id],
+                    learner_model_lock,
+                    stats_lock
+                )
             )
-        )
-        thread.start()
-        threads.append(thread)
+            thread.start()
+            threads.append(thread)
 
     def checkpoint(frames):
         if flags.disable_checkpoint:
