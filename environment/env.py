@@ -80,11 +80,11 @@ class Env:
             if rank == 1:
                 return 3
             elif rank == 2:
-                return 2
-            elif rank == 3:
                 return 1
+            elif rank == 3:
+                return -1
             elif rank == 4:
-                return 0
+                return -3
             else:
                 return 0
 

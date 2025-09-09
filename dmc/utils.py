@@ -127,7 +127,7 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
                     # 使用 env_output 中的最终分数（在 reset 前抓取），后备读取属性
                     scores = env_output.get('final_scores', env.env._game_scores)
                     # 归一化到 [0,1] 区间，稳定训练
-                    new_targets = [float(scores[pos]) / 3.0 for pos in player_position_buf]
+                    new_targets = [float(scores[pos]) for pos in player_position_buf]
 
                     target_buf.extend(new_targets)
                     diff = len(new_targets)
