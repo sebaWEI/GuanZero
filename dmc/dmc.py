@@ -28,18 +28,15 @@ def learn(learner_model,
           flags,
           device_id
           ):
-    if device_id != "cpu":
-        device = torch.device(f'cuda:{device_id}')
-    else:
-        device = torch.device('cpu')
-    obs_x_no_action = batch['obs_x_no_action'].to(device)
-    obs_action = batch['obs_action'].to(device)
-    obs_x = torch.cat((obs_x_no_action, obs_action), dim=2).float()
-    # dim2 why ? need to check data shape
-    obs_x = torch.flatten(obs_x, 0, 1)
-    obs_z = torch.flatten(batch['obs_z'].to(device), 0, 1).float()
+    learner_device = next(learner_model.parameters()).device
 
-    target = torch.flatten(batch['target'].to(device), 0, 1)
+    obs_x_no_action = batch['obs_x_no_action'].to(learner_device)
+    obs_action = batch['obs_action'].to(learner_device)
+    obs_x = torch.cat((obs_x_no_action, obs_action), dim=2).float()
+    obs_x = torch.flatten(obs_x, 0, 1)
+    obs_z = torch.flatten(batch['obs_z'].to(learner_device), 0, 1).float()
+    target = torch.flatten(batch['target'].to(learner_device), 0, 1)
+
     episode_returns = batch['episode_return'][batch['done']]
     if episode_returns.numel() > 0:
         mean_episode_return_buf.append(torch.mean(episode_returns).item())
@@ -50,7 +47,6 @@ def learn(learner_model,
     stats = {
         'mean_episode_return': np.mean(list(mean_episode_return_buf)) if mean_episode_return_buf else 0.0,
         'loss': loss.item()
-
     }
 
     optimizer.zero_grad()
@@ -81,12 +77,12 @@ def train(flags):
     if flags.actor_device_cpu:
         device_iterator = ['cpu']
     else:
-        # actor与learner在同一个设备上，用num_actor_devices统一表示可用设备
+        # actor and learner on same device, use num_actor_devices for available devices
         device_iterator = range(flags.num_actor_devices)
         assert flags.num_actor_devices <= len(
             flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
 
-    # initialize actor model
+    # initialize actor models
     actor_models = {}
     for device_id in device_iterator:
         actor_model = Model(device=device_id)
@@ -96,7 +92,13 @@ def train(flags):
 
     # initialize learner model
     learner_device = flags.training_device
-    learner_model = Model(device=learner_device)
+    if learner_device == 'cpu':
+        learner_device_int = 'cpu'
+    else:
+        learner_device_int = int(learner_device)
+
+    learner_model = Model(device=learner_device_int)
+    learner_model.train()
     # define map_location device for torch.load
     if learner_device == 'cpu':
         map_device = torch.device('cpu')
@@ -104,7 +106,6 @@ def train(flags):
         map_device = torch.device(f'cuda:{learner_device}')
 
     # initialize buffer
-    # check create_buffers
     buffers = create_buffers(flags, device_iterator)
 
     # initialize queue
@@ -119,8 +120,7 @@ def train(flags):
         free_queue[device_id] = _free_queue
         full_queue[device_id] = _full_queue
 
-    # initialize optimizer(only one optimizer)
-    # check create_optimizer
+    # initialize optimizer
     optimizer = create_optimizer(flags, learner_model)
 
     # initialize frames and stats
@@ -140,6 +140,7 @@ def train(flags):
                     log.warning('Missing keys: %s', missing)
                 if unexpected:
                     log.warning('Unexpected keys: %s', unexpected)
+                learner_model.train()
                 try:
                     optimizer.load_state_dict(checkpoint_states['optimizer_state_dict'])
                 except Exception as opt_e:
@@ -159,37 +160,33 @@ def train(flags):
         else:
             log.error('Checkpoint not found at %s. Training from scratch.', checkpointpath)
 
-    # starting actor and append it to actor processes
+    # start actor processes
     actor_processes = []
     for device_id in device_iterator:
         num_actors = flags.num_actors
         for actor_id in range(num_actors):
             actor = ctx.Process(
-                target=act,  # need to check act function
+                target=act,
                 args=(actor_id, device_id, free_queue[device_id], full_queue[device_id],
                       actor_models[device_id], buffers[device_id], flags))
             actor.start()
             actor_processes.append(actor)
 
     def batch_and_learn(learner_id, device_id, data_lock, model_lock, stats_lock):
-        # 声明要修改外部变量
         nonlocal frames, stats
         while frames < flags.total_frames:
-            # check get_batch
             batch = get_batch(free_queue[device_id], full_queue[device_id], buffers[device_id], flags, data_lock)
             with model_lock:
                 _stats = learn(learner_model, batch, optimizer, flags, device_id)
             with stats_lock:
                 for k in _stats:
-                    # update global statisis
                     stats[k] = _stats[k]
                 to_log = dict(frames=frames)
                 to_log.update({k: stats[k] for k in stat_keys})
-                # 更新日志
                 plogger.log(to_log)
                 frames += T * B
 
-    # 初始化锁和线程列表
+    # initialize locks and threads
     threads = []
     data_locks = {}
     model_locks = {}
@@ -199,23 +196,25 @@ def train(flags):
     stats_lock = threading.Lock()
     learner_model_lock = threading.Lock()
 
-    # 启动learner线程
+    # start learner threads
+    learner_device_for_threads = int(learner_device) if learner_device != 'cpu' else 'cpu'
+
     for device_id in device_iterator:
-        # only one learner
-        for learner_id in range(flags.num_threads):
-            thread = threading.Thread(
-                target=batch_and_learn,
-                name=f'BatchAndLearn-{learner_id}',
-                args=(
-                    learner_id,
-                    device_id,
-                    data_locks[device_id],
-                    learner_model_lock,
-                    stats_lock
+        if device_id == learner_device_for_threads:
+            for learner_id in range(flags.num_threads):
+                thread = threading.Thread(
+                    target=batch_and_learn,
+                    name=f'BatchAndLearn-{learner_id}',
+                    args=(
+                        learner_id,
+                        device_id,
+                        data_locks[device_id],
+                        learner_model_lock,
+                        stats_lock
+                    )
                 )
-            )
-            thread.start()
-            threads.append(thread)
+                thread.start()
+                threads.append(thread)
 
     def checkpoint(frames):
         if flags.disable_checkpoint:
