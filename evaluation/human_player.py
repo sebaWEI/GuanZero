@@ -17,7 +17,7 @@ class HumanPlayer:
             if action == []:
                 print(f"{i}: pass")
             else:
-                type = Typenum2RealType[get_move_info(action)['type']]
+                type = Typenum2RealType[get_move_info(action, wild_card_of_game=info_set.wild_card_of_game)['type']]
                 print_action = ''
                 for card in [EnvCard2RealCard[k] for k in action]:
                     print_action += (card + ', ')
@@ -55,7 +55,8 @@ class HumanPlayer:
                             action += (card + ', ')
                         action = action[:-2]
                         print(f'action: {action}')
-                        print(f"type: {Typenum2RealType[get_move_info(info_set.card_play_action_seq[i])['type']]}")
+                        print(
+                            f"type: {Typenum2RealType[get_move_info(info_set.card_play_action_seq[i], wild_card_of_game=info_set.wild_card_of_game)['type']]}")
             except:
                 pass
 

@@ -8,12 +8,12 @@ for i in range(0, 54):
 
 
 class Env:
-    def __init__(self):
+    def __init__(self, wild_card_of_game=1):
         self.players = {}
         for position in ['player_1', 'player_2', 'player_3', 'player_4']:
             self.players[position] = DummyAgent(position)
 
-        self._env = GameEnv(self.players)
+        self._env = GameEnv(self.players, wild_card_of_game=wild_card_of_game)
 
         self.info_set = None
 
@@ -135,7 +135,12 @@ def get_obs(info_set):
 
 
 def cards2array(list_cards):
-    if len(list_cards) == 0:
+    if isinstance(list_cards, int):
+        matrix = np.zeros(54, dtype=np.int8)
+        matrix[list_cards] = 1
+        return matrix
+
+    elif len(list_cards) == 0:
         return np.zeros(54, dtype=np.int8)
 
     matrix = np.zeros(54, dtype=np.int8)
@@ -202,6 +207,9 @@ def get_obs_from_player(info_set):
     players_remain = players_remain_to_array(info_set.players_remain)
     players_remain_batch = np.repeat(np.array(players_remain)[np.newaxis, :], num_legal_actions, axis=0)
 
+    wild_card_of_game = cards2array(info_set.wild_card_of_game)
+    wild_card_of_game_batch = np.repeat(wild_card_of_game[np.newaxis, :], num_legal_actions, axis=0)
+
     my_hand_cards = cards2array(info_set.player_hand_cards)
     my_hand_cards_batch = np.repeat(my_hand_cards[np.newaxis, :], num_legal_actions, axis=0)
 
@@ -237,6 +245,7 @@ def get_obs_from_player(info_set):
 
     x_batch = np.hstack((position_matrix_batch,
                          players_remain_batch,
+                         wild_card_of_game_batch,
                          my_hand_cards_batch,
                          other_hand_cards_batch,
                          my_played_cards_batch,
@@ -249,6 +258,7 @@ def get_obs_from_player(info_set):
                          my_action_batch))
     x_no_action = np.hstack((position_matrix,
                              players_remain,
+                             wild_card_of_game,
                              my_hand_cards,
                              other_hand_cards,
                              my_played_cards,

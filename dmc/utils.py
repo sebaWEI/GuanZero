@@ -39,7 +39,7 @@ def create_buffers(flags, device_iterator):
     buffers = {}
     for device in device_iterator:
         buffers[device] = {}
-        x_dim = 440
+        x_dim = 494
         specs = dict(
             done=dict(size=(T,), dtype=torch.bool),
             episode_return=dict(size=(T,), dtype=torch.float32),

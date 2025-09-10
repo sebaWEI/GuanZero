@@ -15,7 +15,8 @@ def get_team_mate(player):
 
 
 class GameEnv(object):
-    def __init__(self, players):
+    def __init__(self, players, wild_card_of_game=1):
+        self.wild_card_of_game = wild_card_of_game
         self.card_play_action_seq = []
         self.card_play_type_seq = []
         self.players_seq = []
@@ -204,7 +205,7 @@ class GameEnv(object):
 
     def get_legal_card_play_actions(self):
         mg = MovesGenerator(
-            self.info_sets[self.acting_player_position].player_hand_cards)
+            self.info_sets[self.acting_player_position].player_hand_cards, wild_card_of_game=self.wild_card_of_game)
 
         action_sequence = self.card_play_action_seq
         type_sequence = self.card_play_type_seq
@@ -243,7 +244,7 @@ class GameEnv(object):
                 rival_move = action_sequence[-1]
                 rival_type = type_sequence[-1]
 
-        rival_info = md.get_move_info(rival_move)
+        rival_info = md.get_move_info(rival_move, wild_card_of_game=self.wild_card_of_game)
         rival_move_type = rival_info['type']
         moves = list()
 
@@ -252,68 +253,77 @@ class GameEnv(object):
 
         elif rival_move_type == md.TYPE_1_SINGLE:
             all_moves = mg.gen_type_1_single()
-            moves = ms.common_filter(all_moves, rival_move)
+            moves = ms.common_filter(all_moves, rival_move, wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_2_PAIR:
             all_moves = mg.gen_type_2_pair()
-            moves = ms.common_filter(all_moves, rival_move)
+            moves = ms.common_filter(all_moves, rival_move, wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_3_TRIPLE:
             all_moves = mg.gen_type_3_triple()
-            moves = ms.common_filter(all_moves, rival_move)
+            moves = ms.common_filter(all_moves, rival_move, wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_4_3_2:
             all_moves = mg.gen_type_4_3_2()
-            moves = ms.common_filter(all_moves, rival_move)
+            moves = ms.common_filter(all_moves, rival_move, wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_5_STRAIGHT:
             all_moves = mg.gen_type_5_straight()
-            moves = ms.common_filter(all_moves, rival_move)
+            moves = ms.common_filter(all_moves, rival_move, wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_6_SERIAL_PAIR:
             all_moves = mg.gen_type_6_serial_pair()
-            moves = ms.common_filter_with_conditional_statement(all_moves, rival_move)
+            moves = ms.common_filter_with_conditional_statement(all_moves, rival_move,
+                                                                wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_7_SERIAL_TRIPLE:
             all_moves = mg.gen_type_7_serial_triple()
-            moves = ms.common_filter_with_conditional_statement(all_moves, rival_move)
+            moves = ms.common_filter_with_conditional_statement(all_moves, rival_move,
+                                                                wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == [md.TYPE_6_SERIAL_PAIR, md.TYPE_7_SERIAL_TRIPLE]:
             if rival_type == md.TYPE_6_SERIAL_PAIR:
                 all_moves = mg.gen_type_6_serial_pair()
-                moves = ms.common_filter_with_conditional_statement(all_moves, rival_move)
+                moves = ms.common_filter_with_conditional_statement(all_moves, rival_move,
+                                                                    wild_card_of_game=self.wild_card_of_game)
             if rival_type == md.TYPE_7_SERIAL_TRIPLE:
                 all_moves = mg.gen_type_7_serial_triple()
-                moves = ms.common_filter_with_conditional_statement(all_moves, rival_move)
+                moves = ms.common_filter_with_conditional_statement(all_moves, rival_move,
+                                                                    wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_8_BOMB_4:
             all_moves = mg.gen_type_8_bomb_4()
-            moves = ms.common_filter(all_moves, rival_move) + mg.gen_type_9_bomb_5() + \
+            moves = ms.common_filter(all_moves, rival_move,
+                                     wild_card_of_game=self.wild_card_of_game) + mg.gen_type_9_bomb_5() + \
                     mg.gen_type_10_straight_flush() + mg.gen_type_11_bomb_6() + \
                     mg.gen_type_12_bomb_7() + mg.gen_type_13_bomb_8()
 
         elif rival_move_type == md.TYPE_9_BOMB_5:
             all_moves = mg.gen_type_9_bomb_5()
-            moves = ms.common_filter(all_moves, rival_move) + mg.gen_type_10_straight_flush() + \
+            moves = ms.common_filter(all_moves, rival_move,
+                                     wild_card_of_game=self.wild_card_of_game) + mg.gen_type_10_straight_flush() + \
                     mg.gen_type_11_bomb_6() + mg.gen_type_12_bomb_7() + mg.gen_type_13_bomb_8()
 
         elif rival_move_type == md.TYPE_10_STRAIGHT_FLUSH:
             all_moves = mg.gen_type_10_straight_flush()
-            moves = ms.common_filter(all_moves, rival_move) + mg.gen_type_11_bomb_6() + \
+            moves = ms.common_filter(all_moves, rival_move,
+                                     wild_card_of_game=self.wild_card_of_game) + mg.gen_type_11_bomb_6() + \
                     mg.gen_type_12_bomb_7() + mg.gen_type_13_bomb_8()
 
         elif rival_move_type == md.TYPE_11_BOMB_6:
             all_moves = mg.gen_type_11_bomb_6()
-            moves = ms.common_filter(all_moves, rival_move) + mg.gen_type_12_bomb_7() + \
+            moves = ms.common_filter(all_moves, rival_move,
+                                     wild_card_of_game=self.wild_card_of_game) + mg.gen_type_12_bomb_7() + \
                     mg.gen_type_13_bomb_8()
 
         elif rival_move_type == md.TYPE_12_BOMB_7:
             all_moves = mg.gen_type_12_bomb_7()
-            moves = ms.common_filter(all_moves, rival_move) + mg.gen_type_13_bomb_8()
+            moves = ms.common_filter(all_moves, rival_move,
+                                     wild_card_of_game=self.wild_card_of_game) + mg.gen_type_13_bomb_8()
 
         elif rival_move_type == md.TYPE_13_BOMB_8:
             all_moves = mg.gen_type_13_bomb_8()
-            moves = ms.common_filter(all_moves, rival_move)
+            moves = ms.common_filter(all_moves, rival_move, wild_card_of_game=self.wild_card_of_game)
 
         elif rival_move_type == md.TYPE_14_JOKER_BOMB:
             moves = []
@@ -353,7 +363,7 @@ class GameEnv(object):
             self.game_info_set)
         assert action in self.game_info_set.legal_actions
 
-        action_info = md.get_move_info(action)
+        action_info = md.get_move_info(action, wild_card_of_game=self.wild_card_of_game)
         action_type = action_info['type']
 
         if len(action) > 0:
@@ -391,6 +401,7 @@ class GameEnv(object):
             self.info_sets[self.acting_player_position].player_hand_cards.sort()
 
     def get_info_set(self):
+        self.info_sets[self.acting_player_position].wild_card_of_game = self.wild_card_of_game
         self.info_sets[self.acting_player_position].last_pid = self.last_pid
 
         self.info_sets[self.acting_player_position].players_remain = self.players_remain
@@ -478,6 +489,7 @@ class GameEnv(object):
 
 class InfoSet(object):
     def __init__(self, player_position):
+        self.wild_card_of_game = None
         # The player position, i.e., player_1, player_2, player_3, player_4
         self.player_position = player_position
         self.players_remain = []

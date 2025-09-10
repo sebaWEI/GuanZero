@@ -2,11 +2,11 @@
 from .move_detector import get_move_info
 
 
-def common_filter(moves, rival_move):
+def common_filter(moves, rival_move, wild_card_of_game=1):
     new_moves = list()
-    rival_move_rank = get_move_info(rival_move)['rank']
+    rival_move_rank = get_move_info(rival_move, wild_card_of_game=wild_card_of_game)['rank']
     for move in moves:
-        move_rank = get_move_info(move)['rank']
+        move_rank = get_move_info(move, wild_card_of_game=wild_card_of_game)['rank']
         if move_rank is None:
             new_moves.append(move)
         elif move_rank > rival_move_rank:
@@ -14,11 +14,11 @@ def common_filter(moves, rival_move):
     return new_moves
 
 
-def common_filter_with_conditional_statement(moves, rival_move):
+def common_filter_with_conditional_statement(moves, rival_move, wild_card_of_game=1):
     new_moves = []
-    rival_move_rank = get_move_info(rival_move)['rank']
+    rival_move_rank = get_move_info(rival_move, wild_card_of_game=wild_card_of_game)['rank']
     for move in moves:
-        move_info = get_move_info(move)
+        move_info = get_move_info(move, wild_card_of_game=wild_card_of_game)
         move_rank = move_info['rank']
         move_type = move_info['type']
 

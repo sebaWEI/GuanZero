@@ -4,9 +4,9 @@ import numpy as np
 
 from environment.game import GameEnv
 
-from .random_agent import RandomAgent
-from .agent import GuanZeroAgent
-from .human_player import HumanPlayer
+from random_agent import RandomAgent
+from agent import GuanZeroAgent
+from human_player import HumanPlayer
 
 deck = []
 for i in range(0, 54):
@@ -24,7 +24,7 @@ def load_card_play_models():
     return players
 
 
-def create_game_with_players(model_path, player_config=None):
+def create_game_with_players(model_path, player_config=None, wild_card_of_game=1):
     """
     Args:
         model_path: the path of pretrained model
@@ -36,6 +36,8 @@ def create_game_with_players(model_path, player_config=None):
                 'player_3': 'random',
                 'player_4': 'ai'
             }
+
+        wild_card_of_game: wild card of a single game
     """
     if player_config is None:
         player_config = {
@@ -57,11 +59,11 @@ def create_game_with_players(model_path, player_config=None):
         else:  # 'random' or default
             players[position] = RandomAgent()
 
-    return GameEnv(players)
+    return GameEnv(players, wild_card_of_game=wild_card_of_game)
 
 
-def play_single_game(model_path=None,player_config=None):
-    env = create_game_with_players(model_path,player_config)
+def play_single_game(model_path=None, player_config=None, wild_card_of_game=1):
+    env = create_game_with_players(model_path, player_config, wild_card_of_game=wild_card_of_game)
 
     _deck = deck.copy()
     np.random.shuffle(_deck)
@@ -86,8 +88,8 @@ def play_single_game(model_path=None,player_config=None):
     }
 
 
-def mp_simulate(card_play_data_list, model_path, q,player_config):
-    env = create_game_with_players(model_path,player_config)
+def mp_simulate(card_play_data_list, model_path, q, player_config, wild_card_of_game=1):
+    env = create_game_with_players(model_path, player_config, wild_card_of_game=wild_card_of_game)
     for idx, card_play_data in enumerate(card_play_data_list):
         env.card_play_init(card_play_data)
         while not env.game_over:
@@ -121,7 +123,7 @@ def data_allocation_per_worker(card_play_data_list, num_workers):
     return card_play_data_list_each_worker
 
 
-def evaluate(model_path, eval_data, num_workers,player_config):
+def evaluate(model_path, eval_data, num_workers, player_config):
     # Input validation
     if num_workers <= 0:
         raise ValueError("num_workers must be positive")
@@ -162,7 +164,7 @@ def evaluate(model_path, eval_data, num_workers,player_config):
     for card_play_data in card_play_data_list_each_worker:
         p = ctx.Process(
             target=mp_simulate,
-            args=(card_play_data, model_path, q,player_config))
+            args=(card_play_data, model_path, q, player_config))
         p.start()
         processes.append(p)
 
@@ -210,14 +212,16 @@ def evaluate(model_path, eval_data, num_workers,player_config):
 
 if __name__ == "__main__":
     config = {
-        'player_1': 'human',
+        'player_1': 'ai',
         'player_2': 'random',
         'player_3': 'random',
         'player_4': 'random'
     }
 
     try:
-        result = play_single_game(config)
+        result = play_single_game(model_path="/Users/weiziheng/Documents/GitHub/GuanZero/guandan_weights_3200.ckpt",
+                                  player_config=config,
+                                  wild_card_of_game=1)
         print("\ngame over!")
         print("wins:", result['wins'])
         print("scores:", result['scores'])
