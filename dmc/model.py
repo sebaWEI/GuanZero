@@ -8,12 +8,14 @@ class Model(nn.Module):
     def __init__(self, device=0):
         super().__init__()
         self.lstm = nn.LSTM(162, 128, batch_first=True)
-        self.dense1 = nn.Linear(676, 512)
-        self.dense2 = nn.Linear(512, 512)
-        self.dense3 = nn.Linear(512, 512)
-        self.dense4 = nn.Linear(512, 512)
-        self.dense5 = nn.Linear(512, 512)
-        self.dense6 = nn.Linear(512, 1)
+        self.dense1 = nn.Linear(676, 1024)
+        self.dense2 = nn.Linear(1024, 1024)
+        self.dense3 = nn.Linear(1024, 1024)
+        self.dense4 = nn.Linear(1024, 1024)
+        self.dense5 = nn.Linear(1024, 1024)
+        self.dense6 = nn.Linear(1024, 1024)
+        self.dense7 = nn.Linear(1024, 1024)
+        self.dense8 = nn.Linear(1024, 1)
 
         if device != 'cpu':
             device = f'cuda:{device}'
@@ -34,6 +36,10 @@ class Model(nn.Module):
         x = self.dense5(x)
         x = torch.relu(x)
         x = self.dense6(x)
+        x = torch.relu(x)
+        x = self.dense7(x)
+        x = torch.relu(x)
+        x = self.dense8(x)
         if return_value:
             return dict(values=x)
         else:
