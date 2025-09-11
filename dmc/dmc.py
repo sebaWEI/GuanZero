@@ -17,6 +17,81 @@ from .utils import get_batch, log, create_buffers, create_optimizer, act
 mean_episode_return_buf = deque(maxlen=100)
 
 
+def _load_from_latest_weights(flags, learner_model, actor_models, device_iterator, map_device):
+    """Load from the latest weight file and corresponding log record."""
+    try:
+        import pandas as pd
+        import glob
+        
+        # Find the latest weight file
+        weights_dir = os.path.join(flags.savedir, flags.xpid)
+        weight_files = glob.glob(os.path.join(weights_dir, "guandan_weights_*.ckpt"))
+        
+        if not weight_files:
+            return 0, {'mean_episode_return': 0, 'loss': 0}
+        
+        # Extract frame numbers from weight files
+        weight_frames = []
+        for wf in weight_files:
+            try:
+                frame_num = int(os.path.basename(wf).split('_')[-1].split('.')[0])
+                weight_frames.append((frame_num, wf))
+            except:
+                continue
+        
+        if not weight_frames:
+            return 0, {'mean_episode_return': 0, 'loss': 0}
+        
+        # Get the latest weight file
+        weight_frames.sort(key=lambda x: x[0])
+        max_weight_frame, max_weight_file = weight_frames[-1]
+        
+        log.info('Found latest weight file: %s (frame: %d)', max_weight_file, max_weight_frame)
+        
+        # Load the latest weight file
+        try:
+            weight_checkpoint = torch.load(max_weight_file, map_location=map_device, weights_only=False)
+            learner_model.load_state_dict(weight_checkpoint)
+            for device_id in device_iterator:
+                actor_models[device_id].load_state_dict(weight_checkpoint)
+            log.info('Successfully loaded weights from: %s', max_weight_file)
+            
+            # Find corresponding training progress from logs
+            logs_file = os.path.join(flags.savedir, flags.xpid, 'logs.csv')
+            if os.path.exists(logs_file):
+                df = pd.read_csv(logs_file)
+                if not df.empty:
+                    # Ensure frames column is numeric
+                    df['frames'] = pd.to_numeric(df['frames'], errors='coerce')
+                    # Find log record closest to weight file frame
+                    log_records = df[df['frames'] <= max_weight_frame]
+                    if not log_records.empty:
+                        closest_idx = log_records['frames'].idxmax()
+                        frames = int(log_records['frames'].iloc[closest_idx])
+                        stats = {
+                            'mean_episode_return': float(log_records['mean_episode_return'].iloc[closest_idx]),
+                            'loss': float(log_records['loss'].iloc[closest_idx])
+                        }
+                        log.info('Loaded training progress: frame=%d, stats=%s', frames, stats)
+                        return frames, stats
+                    else:
+                        log.info('Using weight file frame: %d', max_weight_frame)
+                        return max_weight_frame, {'mean_episode_return': 0, 'loss': 0}
+                else:
+                    log.info('Using weight file frame: %d', max_weight_frame)
+                    return max_weight_frame, {'mean_episode_return': 0, 'loss': 0}
+            else:
+                log.info('Using weight file frame: %d', max_weight_frame)
+                return max_weight_frame, {'mean_episode_return': 0, 'loss': 0}
+                
+        except Exception as e:
+            log.warning('Failed to load weights from %s: %s', max_weight_file, e)
+            return 0, {'mean_episode_return': 0, 'loss': 0}
+    except Exception as e:
+        log.warning('Failed to load from weight files: %s', e)
+        return 0, {'mean_episode_return': 0, 'loss': 0}
+
+
 def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets) ** 2).mean()
     return loss
@@ -149,7 +224,11 @@ def train(flags):
                     actor_models[device_id].load_state_dict(learner_model.state_dict())
                 stats = checkpoint_states.get('stats', stats)
                 frames = checkpoint_states.get('frames', frames)
-                log.info('Successfully loaded checkpoint.')
+                
+                # Load from the latest weight file and corresponding log record
+                frames, stats = _load_from_latest_weights(flags, learner_model, actor_models, device_iterator, map_device)
+                
+                log.info('Successfully loaded checkpoint. Starting from frame: %d', frames)
             except Exception as e:
                 log.error('Failed to load checkpoint from %s: %r', checkpointpath, e)
                 log.error('Training from scratch')

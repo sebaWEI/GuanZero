@@ -12,6 +12,16 @@ class HumanPlayer:
 
         valid_actions = info_set.legal_actions
 
+        print("\nplayer's hand：")
+        display_hand = ''
+        for card in [EnvCard2RealCard[k] for k in info_set.player_hand_cards]:
+            display_hand += (card + ', ')
+        display_hand = display_hand[:-2]
+        print(display_hand)
+
+
+        print()
+
         print("\navailable actions：")
         for i, action in enumerate(valid_actions):
             if action == []:

@@ -213,13 +213,13 @@ def evaluate(model_path, eval_data, num_workers, player_config):
 if __name__ == "__main__":
     config = {
         'player_1': 'ai',
-        'player_2': 'random',
+        'player_2': 'human',
         'player_3': 'random',
         'player_4': 'random'
     }
 
     try:
-        result = play_single_game(model_path="/Users/weiziheng/Documents/GitHub/GuanZero/guandan_weights_3200.ckpt",
+        result = play_single_game(model_path="/Users/weiziheng/Documents/GitHub/GuanZero/guanzero_checkpoints/guanzero/guandan_weights_636800.ckpt",
                                   player_config=config,
                                   wild_card_of_game=1)
         print("\ngame over!")
