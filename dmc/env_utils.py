@@ -49,7 +49,7 @@ class Environment:
 
         final_scores = None
         if done:
-            # 抓取本局分数后再重置
+            # Capture game scores before reset
             if hasattr(self.env, '_game_scores'):
                 final_scores = self.env._game_scores
             obs = self.env.reset()
