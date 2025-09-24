@@ -10,7 +10,25 @@ if __name__ == '__main__':
         "--gpu_devices", "",
         "--load_model",
         "--xpid", "guanzero",
-        "--savedir", "guanzero_checkpoints"
+        "--savedir", "guanzero_checkpoints",
+        # Model settings - uncomment to use LSTM instead of Transformer
+        # "--use_lstm",
+        # Transformer settings (optional, defaults are already good)
+        # "--d_model", "128",
+        # "--nhead", "8", 
+        # "--num_layers", "2",
+        # "--max_seq_len", "100",
+        # Reward shaping settings - single card priority strategy
+        "--enable_reward_shaping",
+        "--control_reward_weight", "0.1",
+        "--combo_reward_weight", "0.03", 
+        "--single_card_reward", "0.08",
+        "--excess_single_penalty", "0.03",
+        # Progressive reward decay settings
+        "--enable_progressive_reward",
+        "--reward_decay_start", "0.3",
+        "--reward_decay_end", "0.8",
+        "--min_reward_scale", "0.1"
     ]
     flags = parser.parse_args(args)
 
