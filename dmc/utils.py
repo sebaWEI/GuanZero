@@ -23,8 +23,19 @@ log.addHandler(shandle)
 log.setLevel(logging.INFO)
 
 
-def create_env(flags):
-    return Env()
+def create_env(flags, training_progress=0.0):
+    reward_shaping_config = {
+        'enable_reward_shaping': flags.enable_reward_shaping,
+        'control_reward_weight': flags.control_reward_weight,
+        'combo_reward_weight': flags.combo_reward_weight,
+        'single_card_reward': flags.single_card_reward,
+        'excess_single_penalty': flags.excess_single_penalty,
+        'enable_progressive_reward': flags.enable_progressive_reward,
+        'reward_decay_start': flags.reward_decay_start,
+        'reward_decay_end': flags.reward_decay_end,
+        'min_reward_scale': flags.min_reward_scale,
+    }
+    return Env(reward_shaping_config=reward_shaping_config, training_progress=training_progress)
 
 
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
@@ -89,9 +100,15 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
     try:
 
         T = flags.unroll_length
-        log.info(f'演员进程 {actor_id} 已在设备 {device} 上启动。')
+        log.info(f'Actor process {actor_id} started on device {device}.')
 
-        env = create_env(flags)
+        # Calculate training progress based on frames (if available)
+        training_progress = 0.0  # Default for actor processes
+        if hasattr(flags, 'total_frames') and flags.total_frames > 0:
+            # This is a rough estimate - in practice, frames should be passed from main process
+            training_progress = min(1.0, 0.0)  # Will be updated by main process
+        
+        env = create_env(flags, training_progress)
         env = Environment(env, device)
 
         done_buf = []
@@ -124,9 +141,9 @@ def act(actor_id, device, free_queue, full_queue, model, buffers, flags):
                 obs = next_obs
 
                 if env_output['done']:
-                    # 使用 env_output 中的最终分数（在 reset 前抓取），后备读取属性
+                    # Use final scores from env_output (captured before reset), fallback to reading attributes
                     scores = env_output.get('final_scores', env.env._game_scores)
-                    # 归一化到 [0,1] 区间，稳定训练
+                    # Normalize to [0,1] range for stable training
                     new_targets = [float(scores[pos]) for pos in player_position_buf]
 
                     target_buf.extend(new_targets)
