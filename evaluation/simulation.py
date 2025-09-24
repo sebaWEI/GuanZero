@@ -213,17 +213,19 @@ def evaluate(model_path, eval_data, num_workers, player_config):
 if __name__ == "__main__":
     config = {
         'player_1': 'ai',
-        'player_2': 'human',
-        'player_3': 'random',
-        'player_4': 'random'
+        'player_2': 'ai',
+        'player_3': 'ai',
+        'player_4': 'human'
     }
 
     try:
-        result = play_single_game(model_path="/Users/weiziheng/Documents/GitHub/GuanZero/guanzero_checkpoints/guanzero/guandan_weights_636800.ckpt",
-                                  player_config=config,
-                                  wild_card_of_game=1)
-        print("\ngame over!")
-        print("wins:", result['wins'])
-        print("scores:", result['scores'])
+        for _ in range(1):
+            result = play_single_game(
+                model_path="/Users/weiziheng/Documents/GitHub/GuanZero/guanzero_checkpoints/guanzero/guandan_weights_3187200.ckpt",
+                player_config=config,
+                wild_card_of_game=1)
+            print("\ngame over!")
+            print("wins:", result['wins'])
+            print("scores:", result['scores'])
     except Exception as e:
         print(f"errors during game: {e}")
