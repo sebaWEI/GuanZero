@@ -157,10 +157,20 @@ def train(flags):
         assert flags.num_actor_devices <= len(
             flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
 
+    # Determine model type
+    use_transformer = flags.use_transformer and not flags.use_lstm
+    
     # initialize actor models
     actor_models = {}
     for device_id in device_iterator:
-        actor_model = Model(device=device_id)
+        actor_model = Model(
+            device=device_id, 
+            use_transformer=use_transformer,
+            d_model=flags.d_model,
+            nhead=flags.nhead,
+            num_layers=flags.num_layers,
+            max_seq_len=flags.max_seq_len
+        )
         actor_model.share_memory()
         actor_model.eval()
         actor_models[device_id] = actor_model
@@ -172,7 +182,14 @@ def train(flags):
     else:
         learner_device_int = int(learner_device)
 
-    learner_model = Model(device=learner_device_int)
+    learner_model = Model(
+        device=learner_device_int, 
+        use_transformer=use_transformer,
+        d_model=flags.d_model,
+        nhead=flags.nhead,
+        num_layers=flags.num_layers,
+        max_seq_len=flags.max_seq_len
+    )
     learner_model.train()
     # define map_location device for torch.load
     if learner_device == 'cpu':
