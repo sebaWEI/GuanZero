@@ -13,7 +13,7 @@ def _load_model(model_path):
         map_location='cuda:0' if torch.cuda.is_available() else 'cpu',
         weights_only=False,
     )
-    # 支持两种格式：纯 state_dict 或包含 'model_state_dict' 的完整检查点
+    # Support two formats: pure state_dict or complete checkpoint containing 'model_state_dict'
     if isinstance(state, dict) and 'model_state_dict' in state:
         state = state['model_state_dict']
     model.load_state_dict(state, strict=False)
