@@ -8,14 +8,19 @@ for i in range(0, 54):
 
 
 class Env:
-    def __init__(self, wild_card_of_game=1):
+    def __init__(self, wild_card_of_game=1, reward_shaping_config=None, training_progress=0.0):
         self.players = {}
         for position in ['player_1', 'player_2', 'player_3', 'player_4']:
             self.players[position] = DummyAgent(position)
 
         self._env = GameEnv(self.players, wild_card_of_game=wild_card_of_game)
-
+        self.reward_shaping_config = reward_shaping_config or {}
+        self.training_progress = training_progress  # 0.0 to 1.0
         self.info_set = None
+    
+    def update_training_progress(self, progress):
+        """Update training progress for progressive reward scaling"""
+        self.training_progress = max(0.0, min(1.0, progress))
 
     def reset(self):
         self._env.reset()
@@ -36,18 +41,196 @@ class Env:
 
     def step(self, action):
         assert action in self.info_set.legal_actions
+        
+        # Store previous state for reward calculation
+        prev_state = {
+            'last_move': self.info_set.last_move,
+            'player_hand_cards': self.info_set.player_hand_cards.copy(),
+            'cards_left': len(self.info_set.player_hand_cards),
+            'game_phase': self._get_game_phase()
+        }
+        
         self.players[self._acting_player_position].set_action(action)
         self._env.step()
         self.info_set = self._game_info_set
         done = False
         reward = 0.0
+        
         if self._game_over:
             done = True
             reward = self._get_reward()
             obs = None
         else:
             obs = get_obs(self.info_set)
+            # Add strategic reward
+            reward = self._get_strategic_reward(action, prev_state)
+        
         return obs, reward, done, {}
+    
+    def _get_game_phase(self):
+        """Determine game phase based on total cards left"""
+        total_cards_left = sum(len(player_cards) for player_cards in 
+                              [self.info_set.player_hand_cards] + 
+                              [self.info_set.other_hand_cards])
+        if total_cards_left > 80:
+            return 0  # Early
+        elif total_cards_left > 40:
+            return 1  # Middle
+        else:
+            return 2  # Late
+    
+    def _get_reward_scale_factor(self):
+        """Calculate reward scaling factor based on training progress"""
+        if not self.reward_shaping_config.get('enable_progressive_reward', True):
+            return 1.0
+        
+        decay_start = self.reward_shaping_config.get('reward_decay_start', 0.3)
+        decay_end = self.reward_shaping_config.get('reward_decay_end', 0.8)
+        min_scale = self.reward_shaping_config.get('min_reward_scale', 0.1)
+        
+        if self.training_progress < decay_start:
+            return 1.0  # Full reward in early training
+        elif self.training_progress > decay_end:
+            return min_scale  # Minimal reward in late training
+        else:
+            # Linear decay between decay_start and decay_end
+            progress_in_decay = (self.training_progress - decay_start) / (decay_end - decay_start)
+            return 1.0 - progress_in_decay * (1.0 - min_scale)
+
+    def _get_strategic_reward(self, action, prev_state):
+        """Calculate strategic reward for the action"""
+        if not self.reward_shaping_config.get('enable_reward_shaping', True):
+            return 0.0
+        
+        # Calculate base strategic reward
+        base_reward = 0.0
+        
+        # 1. Encourage taking control (self or teammate having control counts)
+        if prev_state['last_move'] and len(prev_state['last_move']) > 0:
+            if self._can_beat_action(action, prev_state['last_move']):
+                base_reward += self.reward_shaping_config.get('control_reward_weight', 0.1)
+        
+        # 2. Strongly encourage playing single cards first (highest priority)
+        if len(action) == 1:
+            single_reward = self.reward_shaping_config.get('single_card_reward', 0.08)
+            # Encourage playing single cards early in game
+            if prev_state['game_phase'] == 0:  # Early
+                base_reward += single_reward * 1.5  # Higher reward for early single cards
+            elif prev_state['game_phase'] == 1:  # Middle
+                base_reward += single_reward
+            else:  # Late
+                base_reward += single_reward * 0.5  # Lower reward for late single cards
+        
+        # 3. Encourage forming effective card combinations (after single cards)
+        elif len(action) > 1:
+            combo_weight = self.reward_shaping_config.get('combo_reward_weight', 0.03)
+            if self._is_pair(action):
+                base_reward += combo_weight
+            elif self._is_triple(action):
+                base_reward += combo_weight * 1.5
+            elif self._is_straight(action):
+                base_reward += combo_weight * 2.0
+            elif self._is_bomb(action):
+                base_reward += combo_weight * 3.0
+        
+        # 4. Penalize excessive single card retention (stricter penalty)
+        single_cards = self._count_single_cards(prev_state['player_hand_cards'])
+        if single_cards > 2:  # Start penalty when single cards exceed 2
+            penalty = self.reward_shaping_config.get('excess_single_penalty', 0.03)
+            # More single cards = heavier penalty
+            penalty_multiplier = min(single_cards - 2, 5)  # Max 5x penalty
+            base_reward -= penalty * penalty_multiplier
+        
+        # 5. Encourage maintaining control (self or teammate)
+        if self._will_maintain_control(action, prev_state):
+            base_reward += 0.05
+        
+        # 6. Penalize losing control
+        if self._will_lose_control(action, prev_state):
+            base_reward -= 0.02
+        
+        # Apply progressive reward scaling
+        scale_factor = self._get_reward_scale_factor()
+        return base_reward * scale_factor
+    
+    def _can_beat_action(self, action, last_action):
+        """Check if current action can beat last action"""
+        if len(action) != len(last_action):
+            return len(action) > len(last_action)
+        return max(action) > max(last_action)
+    
+    def _is_pair(self, cards):
+        return len(cards) == 2 and cards[0] == cards[1]
+    
+    def _is_triple(self, cards):
+        return len(cards) == 3 and len(set(cards)) == 1
+    
+    def _is_straight(self, cards):
+        if len(cards) < 3:
+            return False
+        sorted_cards = sorted(cards)
+        for i in range(1, len(sorted_cards)):
+            if sorted_cards[i] - sorted_cards[i-1] != 1:
+                return False
+        return True
+    
+    def _has_high_cards(self, cards):
+        return any(card >= 50 for card in cards)
+    
+    def _is_bomb(self, cards):
+        """Check if cards form a bomb (4+ of same card)"""
+        if len(cards) < 4:
+            return False
+        return len(set(cards)) == 1
+    
+    def _count_single_cards(self, hand_cards):
+        """Count how many single cards (not in pairs/triples) are in hand"""
+        card_count = {}
+        for card in hand_cards:
+            card_count[card] = card_count.get(card, 0) + 1
+        
+        single_count = 0
+        for count in card_count.values():
+            if count == 1:
+                single_count += 1
+        return single_count
+    
+    def _is_middle_card_action(self, action, game_phase):
+        """Check if action uses middle-value cards at appropriate phase"""
+        if not action:
+            return False
+        
+        # Define middle card range (adjust based on actual game rules)
+        middle_cards = [card for card in action if 20 <= card <= 40]
+        
+        # Encourage playing middle cards in mid-game
+        if game_phase == 1 and middle_cards:
+            return True
+        
+        return False
+    
+    def _will_maintain_control(self, action, prev_state):
+        """Check if this action will help maintain control (self or teammate)"""
+        # Simplified logic: beating opponent or playing single cards = maintaining control
+        if len(action) == 1:
+            return True
+        
+        # If can beat opponent's cards
+        if prev_state['last_move'] and len(prev_state['last_move']) > 0:
+            if self._can_beat_action(action, prev_state['last_move']):
+                return True
+        
+        return False
+    
+    def _will_lose_control(self, action, prev_state):
+        """Check if this action will likely lose control"""
+        # If playing high cards but cannot beat opponent, may lose control
+        if len(action) == 1 and self._has_high_cards(action):
+            if prev_state['last_move'] and len(prev_state['last_move']) > 0:
+                if not self._can_beat_action(action, prev_state['last_move']):
+                    return True
+        
+        return False
 
     def _get_reward(self):
         winner = self._game_winner
@@ -76,23 +259,23 @@ class Env:
     def _game_scores(self):
         ranks = self._env.players_rank
 
-        def score_from_rank(rank):
-            if rank == 1:
+        def score_from_rank(rank, team_mate_rank):
+            if rank == 1 and team_mate_rank == 2:
                 return 3
-            elif rank == 2:
-                return 1
-            elif rank == 3:
-                return -1
-            elif rank == 4:
+            elif rank == 2 and team_mate_rank == 1:
+                return 2
+            elif (rank == 2 and team_mate_rank == 3) or (rank == 3 and team_mate_rank == 2):
+                return -2
+            elif (rank == 3 and team_mate_rank == 4) or (rank == 4 and team_mate_rank == 3):
                 return -3
             else:
                 return 0
 
         return {
-            'player_1': score_from_rank(ranks['player_1']),
-            'player_2': score_from_rank(ranks['player_2']),
-            'player_3': score_from_rank(ranks['player_3']),
-            'player_4': score_from_rank(ranks['player_4']),
+            'player_1': score_from_rank(ranks['player_1'], ranks['player_3']),
+            'player_2': score_from_rank(ranks['player_2'], ranks['player_4']),
+            'player_3': score_from_rank(ranks['player_3'], ranks['player_1']),
+            'player_4': score_from_rank(ranks['player_4'], ranks['player_2']),
         }
 
     @property
